@@ -38,7 +38,7 @@ def snapshot():
 class BackendContractTests(unittest.TestCase):
     def setUp(self):
         from dashboard.store import init_db, register_project
-        from dashboard.api import create_read_app, create_write_app
+        from dashboard.api import create_app
 
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -51,36 +51,38 @@ class BackendContractTests(unittest.TestCase):
         self.other_token = "project-two-secret"
         register_project(self.db, "one", self.token)
         register_project(self.db, "two", self.other_token)
-        self.write = TestClient(create_write_app(self.db))
-        self.read = TestClient(create_read_app(self.db, self.web, "viewer", "view-secret"))
+        self.read = TestClient(create_app(self.db, self.web, "viewer", "view-secret"))
+        self.write = self.read
 
     def send(self, payload=None, key="request-1", token=None, project="one"):
         return self.write.put(
             f"/api/v1/projects/{project}/snapshot",
-            headers={"Authorization": f"Bearer {token or self.token}",
-                     "Idempotency-Key": key},
+            headers={"X-Project-Token": token or self.token,
+                     "Idempotency-Key": key}, auth=("viewer", "view-secret"),
             json=snapshot() if payload is None else payload,
         )
 
     def view(self, path="/api/v1/projects", password="view-secret"):
         return self.read.get(path, auth=("viewer", password))
 
-    def test_empty_read_is_authenticated_and_no_write_routes_exist(self):
+    def test_unified_app_requires_basic_for_every_route_and_token_for_writes(self):
         self.assertEqual(self.read.get("/api/v1/projects").status_code, 401)
         self.assertEqual(self.read.get("/healthz").status_code, 401)
         self.assertEqual(self.view(password="wrong").status_code, 401)
-        self.assertEqual(self.read.get("/openapi.json", auth=("viewer", "view-secret")).status_code, 404)
-        self.assertEqual(self.read.get("/docs", auth=("viewer", "view-secret")).status_code, 404)
-        self.assertEqual(self.read.put("/api/v1/projects/one/snapshot", auth=("viewer", "view-secret")).status_code, 404)
+        self.assertEqual(self.read.get("/openapi.json").status_code, 401)
+        self.assertEqual(self.read.get("/docs").status_code, 401)
+        self.assertEqual(self.read.get("/openapi.json", auth=("viewer", "view-secret")).status_code, 200)
+        self.assertEqual(self.read.put("/api/v1/projects/one/snapshot", auth=("viewer", "view-secret")).status_code, 401)
+        self.assertEqual(self.read.put("/api/v1/projects/one/snapshot", headers={"X-Project-Token": self.token}, json=snapshot()).status_code, 401)
         response = self.view()
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["projects"], [])
         self.assertIn("server_time", response.json())
         self.assertEqual(response.headers["cache-control"], "no-store")
         self.assertEqual(self.view("/").text, "real front end")
-        schema = self.write.get("/openapi.json").json()
+        schema = self.write.get("/openapi.json", auth=("viewer", "view-secret")).json()
         self.assertIn("put", schema["paths"]["/api/v1/projects/{project_id}/snapshot"])
-        self.assertEqual(self.write.get("/docs").status_code, 200)
+        self.assertEqual(self.write.get("/docs", auth=("viewer", "view-secret")).status_code, 200)
 
     def test_atomic_snapshot_progress_and_replay_survive_restart(self):
         response = self.send()
@@ -93,11 +95,11 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(view["observedAt"], "2026-09-28T08:00:00Z")
         self.assertIn("receivedAt", view)
         self.assertNotIn("token", json.dumps(view).lower())
-        from dashboard.api import create_write_app
-        restarted = TestClient(create_write_app(self.db))
+        from dashboard.api import create_app
+        restarted = TestClient(create_app(self.db, self.web, "viewer", "view-secret"))
         replay = restarted.put("/api/v1/projects/one/snapshot",
-                              headers={"Authorization": f"Bearer {self.token}",
-                                       "Idempotency-Key": "request-1"}, json=snapshot())
+                              headers={"X-Project-Token": self.token,
+                                       "Idempotency-Key": "request-1"}, auth=("viewer", "view-secret"), json=snapshot())
         self.assertEqual(replay.status_code, 200, replay.text)
         self.assertEqual(replay.json()["revision"], 1)
         self.assertTrue(replay.json()["replayed"])
@@ -148,7 +150,7 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(self.send(token=self.other_token).status_code, 401)
         self.assertEqual(self.send(project="two", token=self.other_token).status_code, 200)
         self.assertEqual(self.write.get("/api/v1/projects/one/revision",
-                                        headers={"Authorization": f"Bearer {self.other_token}"}).status_code, 401)
+                                        headers={"X-Project-Token": self.other_token}, auth=("viewer", "view-secret")).status_code, 401)
 
     def test_invalid_snapshots_do_not_partially_write(self):
         cases = []
@@ -167,19 +169,19 @@ class BackendContractTests(unittest.TestCase):
                 self.assertEqual(response.status_code, 422, response.text)
         self.assertEqual(self.view().json()["projects"], [])
         self.assertEqual(self.write.get("/api/v1/projects/one/revision",
-                                        headers={"Authorization": f"Bearer {self.token}"}).json()["revision"], 0)
+                                        headers={"X-Project-Token": self.token}, auth=("viewer", "view-secret")).json()["revision"], 0)
 
     def test_body_limit_and_complete_requirements(self):
         huge = b" " * (1024 * 1024 + 1)
         response = self.write.put("/api/v1/projects/one/snapshot",
-                                  headers={"Authorization": f"Bearer {self.token}",
+                                  headers={"X-Project-Token": self.token,
                                            "Idempotency-Key": "huge",
-                                           "Content-Type": "application/json"}, content=huge)
+                                           "Content-Type": "application/json"}, auth=("viewer", "view-secret"), content=huge)
         self.assertEqual(response.status_code, 413)
         unauthorized = self.write.put("/api/v1/projects/one/snapshot",
-                                      headers={"Authorization": "Bearer wrong",
+                                      headers={"X-Project-Token": "wrong",
                                                "Idempotency-Key": "huge",
-                                               "Content-Type": "application/json"}, content=huge)
+                                               "Content-Type": "application/json"}, auth=("viewer", "view-secret"), content=huge)
         self.assertEqual(unauthorized.status_code, 401)
         empty_complete = snapshot()
         empty_complete["project"].update(status="complete", waves=[], currentWave=None)
@@ -195,10 +197,10 @@ class BackendContractTests(unittest.TestCase):
         raw = json.dumps(snapshot(), ensure_ascii=False)
         raw = raw.replace('"expected_revision": 0', '"expected_revision": 99, "expected_revision": 0', 1)
         response = self.write.put("/api/v1/projects/one/snapshot",
-                                  headers={"Authorization": f"Bearer {self.token}",
+                                  headers={"X-Project-Token": self.token,
                                            "Idempotency-Key": "duplicate-json",
                                            "Content-Type": "application/json"},
-                                  content=raw.encode("utf-8"))
+                                  auth=("viewer", "view-secret"), content=raw.encode("utf-8"))
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.view().json()["projects"], [])
 
@@ -216,7 +218,7 @@ class BackendContractTests(unittest.TestCase):
         self.assertNotIn(self.db, response.text)
 
     def test_openapi_refs_and_report_auth_headers_are_machine_readable(self):
-        document = self.write.get("/openapi.json").json()
+        document = self.write.get("/openapi.json", auth=("viewer", "view-secret")).json()
         refs = []
         nodes = [document]
         while nodes:
@@ -237,10 +239,14 @@ class BackendContractTests(unittest.TestCase):
 
         upload = document["paths"]["/api/v1/projects/{project_id}/snapshot"]["put"]
         revision = document["paths"]["/api/v1/projects/{project_id}/revision"]["get"]
-        scheme = document["components"]["securitySchemes"]["ProjectBearer"]
-        self.assertEqual(scheme, {"type": "http", "scheme": "bearer"})
-        self.assertIn({"ProjectBearer": []}, upload["security"])
-        self.assertIn({"ProjectBearer": []}, revision["security"])
+        schemes = document["components"]["securitySchemes"]
+        self.assertEqual(schemes["ViewerBasic"], {"type": "http", "scheme": "basic"})
+        self.assertEqual(schemes["ProjectToken"], {"type": "apiKey", "in": "header", "name": "X-Project-Token"})
+        self.assertEqual(upload["security"], [{"ViewerBasic": [], "ProjectToken": []}])
+        self.assertEqual(revision["security"], [{"ViewerBasic": [], "ProjectToken": []}])
+        self.assertEqual(document["paths"]["/api/v1/projects"]["get"]["security"], [{"ViewerBasic": []}])
+        self.assertIn("200", upload["responses"])
+        self.assertIn("schema", upload["responses"]["200"]["content"]["application/json"])
         idempotency = [parameter for parameter in upload["parameters"]
                        if parameter["in"] == "header" and parameter["name"] == "Idempotency-Key"]
         self.assertEqual(len(idempotency), 1)
@@ -248,8 +254,8 @@ class BackendContractTests(unittest.TestCase):
         self.assertIn("application/json", upload["requestBody"]["content"])
 
     def test_basic_auth_handles_unicode_configuration_and_inputs(self):
-        from dashboard.api import create_read_app
-        unicode_view = TestClient(create_read_app(self.db, self.web, "用户", "密碼"))
+        from dashboard.api import create_app
+        unicode_view = TestClient(create_app(self.db, self.web, "用户", "密碼"))
         challenge = unicode_view.get("/healthz")
         self.assertEqual(challenge.status_code, 401)
         self.assertIn('charset="UTF-8"', challenge.headers["WWW-Authenticate"])
@@ -261,6 +267,18 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(unicode_view.get("/healthz", headers=basic("用户", "密碼")).status_code, 200)
         self.assertEqual(unicode_view.get("/healthz", headers=basic("用户", "错误")).status_code, 401)
         self.assertEqual(self.read.get("/healthz", headers=basic("viewer", "错误")).status_code, 401)
+
+    def test_revision_and_snapshot_reject_missing_basic_or_project_token(self):
+        revision = "/api/v1/projects/one/revision"
+        upload = "/api/v1/projects/one/snapshot"
+        for path, method in ((revision, "get"), (upload, "put")):
+            call = getattr(self.read, method)
+            kwargs = {"json": snapshot()} if method == "put" else {}
+            with self.subTest(path=path):
+                self.assertEqual(call(path, headers={"X-Project-Token": self.token}, **kwargs).status_code, 401)
+                self.assertEqual(call(path, auth=("viewer", "view-secret"), **kwargs).status_code, 401)
+                self.assertEqual(call(path, auth=("viewer", "view-secret"), headers={"Authorization": f"Bearer {self.token}"}, **kwargs).status_code, 401)
+        self.assertEqual(self.read.get(revision, auth=("viewer", "view-secret"), headers={"X-Project-Token": self.token}).json()["revision"], 0)
 
 
 if __name__ == "__main__":

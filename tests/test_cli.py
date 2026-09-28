@@ -68,12 +68,14 @@ class ReporterTests(unittest.TestCase):
 
         with patch("clients.report_progress.urlopen", side_effect=fake_open), \
              patch("clients.report_progress.time.sleep"):
-            result = send_request(self.request, "secret", "http://127.0.0.1:8811", retries=2)
+            result = send_request(self.request, "secret", "http://127.0.0.1:8810", "viewer", "view-secret", retries=2)
         self.assertEqual(result["revision"], 8)
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0], calls[1])
         self.assertIn(b'"expected_revision":7', calls[0][1])
         self.assertEqual(calls[0][2]["Idempotency-key"], "fixed-key")
+        self.assertEqual(calls[0][2]["X-project-token"], "secret")
+        self.assertTrue(calls[0][2]["Authorization"].startswith("Basic "))
 
     def test_conflict_never_retries_or_edits_request_file(self):
         from clients.report_progress import prepare_request, send_request, ReportError
@@ -81,19 +83,21 @@ class ReporterTests(unittest.TestCase):
         prepare_request("one", self.snapshot, self.request, "fixed-key")
         original = self.request.read_bytes()
         calls = []
+        error_body = BytesIO(b'{"error":{"code":"revision_conflict"},"current_revision":9}')
 
         def conflict(request, timeout):
             calls.append(request)
             raise HTTPError(request.full_url, 409, "conflict", {},
-                            BytesIO(b'{"error":{"code":"revision_conflict"},"current_revision":9}'))
+                            error_body)
 
         with patch("clients.report_progress.urlopen", side_effect=conflict), \
              patch("clients.report_progress.time.sleep") as sleep:
             with self.assertRaises(ReportError) as error:
-                send_request(self.request, "secret", "http://127.0.0.1:8811", retries=4)
+                send_request(self.request, "secret", "http://127.0.0.1:8810", "viewer", "view-secret", retries=4)
         self.assertIn("9", str(error.exception))
         self.assertEqual(len(calls), 1)
         sleep.assert_not_called()
+        self.assertTrue(error_body.closed)
         self.assertEqual(self.request.read_bytes(), original)
 
     def test_auth_and_validation_errors_never_retry(self):
@@ -110,17 +114,144 @@ class ReporterTests(unittest.TestCase):
             with self.subTest(status=status), patch("clients.report_progress.urlopen", side_effect=rejected), \
                  patch("clients.report_progress.time.sleep") as sleep:
                 with self.assertRaises(ReportError):
-                    send_request(self.request, "secret", retries=4)
+                    send_request(self.request, "secret", "http://127.0.0.1:8810", "viewer", "view-secret", retries=4)
                 self.assertEqual(len(calls), 1)
                 sleep.assert_not_called()
 
-    def test_token_is_never_sent_to_non_loopback_url(self):
+    def test_token_is_never_sent_to_insecure_external_url(self):
         from clients.report_progress import prepare_request, send_request, ReportError
         prepare_request("one", self.snapshot, self.request, "fixed-key")
         with patch("clients.report_progress.urlopen") as open_url:
             with self.assertRaises(ReportError):
-                send_request(self.request, "secret", "https://unrelated.example")
+                send_request(self.request, "secret", "http://unrelated.example:8810", "viewer", "view-secret")
             open_url.assert_not_called()
+
+    def test_https_and_revision_send_basic_and_project_token(self):
+        from clients.report_progress import fetch_revision
+        from io import BytesIO
+        calls = []
+        def fake_open(request, timeout):
+            calls.append(request)
+            return BytesIO(b'{"project_id":"one","revision":7}')
+        with patch("clients.report_progress.urlopen", side_effect=fake_open):
+            result = fetch_revision("one", "secret", "https://view.example", "用户", "密碼")
+        self.assertEqual(result["revision"], 7)
+        self.assertEqual(calls[0].full_url, "https://view.example/api/v1/projects/one/revision")
+        self.assertEqual(calls[0].headers["X-project-token"], "secret")
+        import base64
+        encoded = base64.b64encode("用户:密碼".encode()).decode()
+        self.assertEqual(calls[0].headers["Authorization"], "Basic " + encoded)
+
+    def test_url_validation_and_retries_happen_before_network(self):
+        from clients.report_progress import prepare_request, send_request, ReportError
+        prepare_request("one", self.snapshot, self.request, "fixed-key")
+        invalid = ("http://view.example:8810", "http://127.0.0.1", "https://user:pass@view.example",
+                   "https://view.example/path", "https://view.example?x=1", "https://view.example:0",
+                   "https://view.example\r\n")
+        with patch("clients.report_progress.urlopen") as open_url:
+            for url in invalid:
+                with self.subTest(url=url), self.assertRaises(ReportError):
+                    send_request(self.request, "secret", url, "viewer", "view-secret")
+            for retries in (-1, 11):
+                with self.assertRaises(ReportError):
+                    send_request(self.request, "secret", "https://view.example", "viewer", "view-secret", retries)
+            open_url.assert_not_called()
+
+    def test_main_requires_explicit_base_url_and_exclusive_basic_source(self):
+        from clients.report_progress import main, prepare_request
+        prepare_request("one", self.snapshot, self.request, "fixed-key")
+        token = Path(self.temp.name) / "token"
+        token.write_text("secret", encoding="utf-8")
+        basic = Path(self.temp.name) / "basic.json"
+        basic.write_text('{"username":"viewer","password":"view-secret"}', encoding="utf-8")
+        with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                main(["send", "--request-file", str(self.request), "--token-file", str(token),
+                      "--basic-auth-file", str(basic)])
+            with self.assertRaises(SystemExit):
+                main(["send", "--request-file", str(self.request), "--token-file", str(token),
+                      "--basic-auth-file", str(basic), "--basic-user-env", "USER", "--base-url", "https://view.example"])
+
+    def test_redirect_is_not_followed_and_error_omits_credentials(self):
+        from clients.report_progress import prepare_request, send_request, ReportError
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        from threading import Thread
+        prepare_request("one", self.snapshot, self.request, "fixed-key")
+        visited = []
+        class RedirectHandler(BaseHTTPRequestHandler):
+            def do_PUT(self):
+                visited.append(self.path)
+                self.send_response(302)
+                self.send_header("Location", "/landing")
+                self.end_headers()
+            def log_message(self, *args):
+                pass
+        server = ThreadingHTTPServer(("127.0.0.1", 0), RedirectHandler)
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with self.assertRaises(ReportError) as error:
+                send_request(self.request, "secret", f"http://127.0.0.1:{server.server_port}", "viewer", "view-secret")
+        finally:
+            server.shutdown()
+            thread.join()
+            server.server_close()
+        self.assertEqual(visited, ["/api/v1/projects/one/snapshot"])
+        self.assertNotIn("secret", str(error.exception))
+        self.assertNotIn("view-secret", str(error.exception))
+
+    def test_cli_reads_file_credentials_and_sends_without_printing_secrets(self):
+        from clients.report_progress import main, prepare_request
+        from io import BytesIO
+        prepare_request("one", self.snapshot, self.request, "fixed-key")
+        token = Path(self.temp.name) / "token"
+        token.write_text("secret", encoding="utf-8")
+        basic = Path(self.temp.name) / "basic.json"
+        basic.write_text('{"username":"viewer","password":"view-secret"}', encoding="utf-8")
+        seen = []
+        def fake_open(request, timeout):
+            seen.append(request)
+            return BytesIO(b'{"project_id":"one","revision":8,"received_at":"now","replayed":false}')
+        output = io.StringIO()
+        with patch("clients.report_progress.urlopen", side_effect=fake_open), contextlib.redirect_stdout(output):
+            status = main(["send", "--request-file", str(self.request), "--token-file", str(token),
+                           "--basic-auth-file", str(basic), "--base-url", "https://view.example"])
+        self.assertEqual(status, 0)
+        self.assertEqual(seen[0].headers["X-project-token"], "secret")
+        self.assertNotIn("secret", output.getvalue())
+        self.assertIn("revision=8", output.getvalue())
+
+    def test_cli_revision_reads_separate_environment_credentials(self):
+        from clients.report_progress import main
+        from io import BytesIO
+        seen = []
+        def fake_open(request, timeout):
+            seen.append(request)
+            return BytesIO(b'{"project_id":"one","revision":7}')
+        env = {"REPORT_TOKEN": "secret", "VIEW_USER": "viewer", "VIEW_PASS": "view-secret"}
+        output = io.StringIO()
+        with patch.dict(os.environ, env), patch("clients.report_progress.urlopen", side_effect=fake_open), \
+             contextlib.redirect_stdout(output):
+            status = main(["revision", "one", "--token-env", "REPORT_TOKEN", "--basic-user-env", "VIEW_USER",
+                           "--basic-password-env", "VIEW_PASS", "--base-url", "https://view.example"])
+        self.assertEqual(status, 0)
+        self.assertEqual(seen[0].headers["X-project-token"], "secret")
+        self.assertEqual(output.getvalue().strip(), "revision=7")
+
+
+class ServerEntryTests(unittest.TestCase):
+    def test_default_is_one_loopback_service_and_old_write_role_rejected(self):
+        from dashboard.server import main
+        with tempfile.TemporaryDirectory() as temp:
+            variables = {"DASHBOARD_DB_PATH": str(Path(temp) / "db.sqlite3"),
+                         "DASHBOARD_WEB_DIR": temp, "DASHBOARD_VIEW_USERNAME": "viewer",
+                         "DASHBOARD_VIEW_PASSWORD": "secret"}
+            with patch.dict(os.environ, variables), patch("dashboard.server.uvicorn.run") as run:
+                self.assertEqual(main([]), 0)
+                self.assertEqual(run.call_args.kwargs["host"], "127.0.0.1")
+                self.assertEqual(run.call_args.kwargs["port"], 8810)
+                with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                    main(["--role", "write"])
 
 
 if __name__ == "__main__":

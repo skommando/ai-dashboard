@@ -1,4 +1,4 @@
-"""完全分离的只读与上报 ASGI 应用。"""
+"""统一读取与上报 ASGI 应用。"""
 
 import base64
 import binascii
@@ -12,9 +12,9 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
-from .models import Snapshot
+from .models import Project, Snapshot
 from .store import (AuthenticationChanged, KeyConflict, RevisionConflict,
                     authorized_revision, init_db, project_views, save_snapshot)
 
@@ -22,7 +22,62 @@ from .store import (AuthenticationChanged, KeyConflict, RevisionConflict,
 MAX_BODY = 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}\Z")
 KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-BEARER_SECURITY = [{"ProjectBearer": []}]
+READ_SECURITY = [{"ViewerBasic": []}]
+WRITE_SECURITY = [{"ViewerBasic": [], "ProjectToken": []}]
+
+
+class ErrorDetail(BaseModel):
+    code: str
+    message: str
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorDetail
+    current_revision: int | None = None
+
+
+class HealthResponse(BaseModel):
+    status: str
+
+
+class RevisionResponse(BaseModel):
+    project_id: str
+    revision: int
+
+
+class SnapshotReceipt(BaseModel):
+    project_id: str
+    revision: int
+    received_at: str
+    replayed: bool
+
+
+class ProgressResponse(BaseModel):
+    done: int
+    total: int
+    percent: int | None
+    unplannedWaves: int
+    pendingAcceptance: int
+
+
+class ProjectView(Project):
+    id: str
+    revision: int
+    receivedAt: str
+    observedAt: str
+    progress: ProgressResponse
+
+
+class ProjectsResponse(BaseModel):
+    projects: list[ProjectView]
+    server_time: str
+
+
+def error_responses(*statuses: int) -> dict:
+    descriptions = {401: "认证失败", 404: "项目快照不存在", 409: "版本或幂等键冲突",
+                    413: "请求体超过 1 MiB", 415: "仅接受 application/json",
+                    422: "输入验证失败", 500: "存储暂不可用", 503: "前端不可用"}
+    return {status: {"model": ErrorResponse, "description": descriptions[status]} for status in statuses}
 
 
 def now_iso() -> str:
@@ -46,27 +101,36 @@ def storage_error(request: Request, exception: sqlite3.Error) -> JSONResponse:
     return error(500, "storage_error", "dashboard storage is temporarily unavailable")
 
 
-def bearer(request: Request) -> str | None:
-    auth = request.headers.get("authorization", "")
-    parts = auth.split(" ", 1)
-    return parts[1] if len(parts) == 2 and parts[0].lower() == "bearer" and parts[1] else None
-
-
-def create_write_app(db_path: str) -> FastAPI:
+def create_app(db_path: str, web_dir: str | Path, username: str, password: str) -> FastAPI:
+    if not username or not password or ":" in username:
+        raise ValueError("Basic Auth username/password required; username cannot contain colon")
     init_db(db_path)
-    app = FastAPI(title="AI Dashboard 上报 API", version="1.0.0")
+    page = Path(web_dir) / "index.html"
+    app = FastAPI(title="AI Dashboard API", version="1.0.0")
     app.add_exception_handler(sqlite3.Error, storage_error)
 
-    @app.get("/healthz")
+    @app.middleware("http")
+    async def protect(request: Request, call_next):
+        if not _valid_basic(request, username, password):
+            response = error(401, "unauthorized", "Basic authentication required")
+            response.headers["WWW-Authenticate"] = 'Basic realm="AI Dashboard", charset="UTF-8"'
+        else:
+            response = await call_next(request)
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
+    @app.get("/healthz", response_model=HealthResponse,
+             openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 500))
     def health():
         return {"status": "ok"}
 
     @app.get("/api/v1/projects/{project_id}/revision",
-             openapi_extra={"security": BEARER_SECURITY},
-             responses={401: {"description": "无效项目令牌"}})
+             response_model=RevisionResponse,
+             openapi_extra={"security": WRITE_SECURITY},
+             responses=error_responses(401, 500))
     def revision(project_id: str, request: Request):
-        token = bearer(request)
-        if not ID_PATTERN.fullmatch(project_id) or token is None:
+        token = request.headers.get("x-project-token", "")
+        if not ID_PATTERN.fullmatch(project_id) or not token:
             return error(401, "unauthorized", "invalid project token")
         current = authorized_revision(db_path, project_id, token)
         if current is None:
@@ -75,8 +139,9 @@ def create_write_app(db_path: str) -> FastAPI:
 
     @app.put(
         "/api/v1/projects/{project_id}/snapshot",
+        response_model=SnapshotReceipt,
         openapi_extra={
-            "security": BEARER_SECURITY,
+            "security": WRITE_SECURITY,
             "parameters": [{"name": "Idempotency-Key", "in": "header", "required": True,
                             "description": "同一请求重试时保持不变的唯一键",
                             "schema": {"type": "string", "minLength": 1, "maxLength": 128,
@@ -84,14 +149,11 @@ def create_write_app(db_path: str) -> FastAPI:
             "requestBody": {"required": True, "content": {"application/json":
                             {"schema": {"$ref": "#/components/schemas/Snapshot"}}}},
         },
-        responses={401: {"description": "无效项目令牌"},
-                   409: {"description": "revision 或幂等键冲突"},
-                   413: {"description": "请求体超过 1 MiB"},
-                   422: {"description": "快照验证失败"}},
+        responses=error_responses(401, 409, 413, 415, 422, 500),
     )
     async def upload(project_id: str, request: Request):
-        token = bearer(request)
-        if not ID_PATTERN.fullmatch(project_id) or token is None:
+        token = request.headers.get("x-project-token", "")
+        if not ID_PATTERN.fullmatch(project_id) or not token:
             return error(401, "unauthorized", "invalid project token")
         if authorized_revision(db_path, project_id, token) is None:
             return error(401, "unauthorized", "invalid project token")
@@ -127,9 +189,10 @@ def create_write_app(db_path: str) -> FastAPI:
         if app.openapi_schema is None:
             document = get_openapi(title=app.title, version=app.version, routes=app.routes)
             components = document.setdefault("components", {})
-            components.setdefault("securitySchemes", {})["ProjectBearer"] = {
-                "type": "http", "scheme": "bearer"
-            }
+            components.setdefault("securitySchemes", {}).update({
+                "ViewerBasic": {"type": "http", "scheme": "basic"},
+                "ProjectToken": {"type": "apiKey", "in": "header", "name": "X-Project-Token"},
+            })
             schemas = components.setdefault("schemas", {})
             snapshot_schema = Snapshot.model_json_schema(ref_template="#/components/schemas/{model}")
             schemas.update(snapshot_schema.pop("$defs", {}))
@@ -138,6 +201,26 @@ def create_write_app(db_path: str) -> FastAPI:
         return app.openapi_schema
 
     app.openapi = openapi
+
+    @app.get("/", openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 503))
+    def index():
+        if not page.is_file():
+            return error(503, "web_unavailable", "web frontend is unavailable")
+        return FileResponse(page, media_type="text/html; charset=utf-8")
+
+    @app.get("/api/v1/projects", response_model=ProjectsResponse,
+             openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 500))
+    def projects():
+        return {"projects": project_views(db_path), "server_time": now_iso()}
+
+    @app.get("/api/v1/projects/{project_id}", response_model=ProjectView,
+             openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 404, 500))
+    def project(project_id: str):
+        views = project_views(db_path, project_id)
+        if not views:
+            return error(404, "not_found", "project snapshot not found")
+        return views[0]
+
     return app
 
 
@@ -156,45 +239,3 @@ def _valid_basic(request: Request, username: str, password: str) -> bool:
     user_matches = hmac.compare_digest(supplied_user.encode("utf-8"), username.encode("utf-8"))
     password_matches = hmac.compare_digest(supplied_password.encode("utf-8"), password.encode("utf-8"))
     return user_matches and password_matches
-
-
-def create_read_app(db_path: str, web_dir: str | Path, username: str, password: str) -> FastAPI:
-    if not username or not password:
-        raise ValueError("view Basic Auth credentials are required")
-    init_db(db_path)
-    page = Path(web_dir) / "index.html"
-    app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
-    app.add_exception_handler(sqlite3.Error, storage_error)
-
-    @app.middleware("http")
-    async def protect(request: Request, call_next):
-        if not _valid_basic(request, username, password):
-            response = error(401, "unauthorized", "Basic authentication required")
-            response.headers["WWW-Authenticate"] = 'Basic realm="AI Dashboard", charset="UTF-8"'
-        else:
-            response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
-        return response
-
-    @app.get("/")
-    def index():
-        if not page.is_file():
-            return error(503, "web_unavailable", "web frontend is unavailable")
-        return FileResponse(page, media_type="text/html; charset=utf-8")
-
-    @app.get("/healthz")
-    def health():
-        return {"status": "ok"}
-
-    @app.get("/api/v1/projects")
-    def projects():
-        return {"projects": project_views(db_path), "server_time": now_iso()}
-
-    @app.get("/api/v1/projects/{project_id}")
-    def project(project_id: str):
-        views = project_views(db_path, project_id)
-        if not views:
-            return error(404, "not_found", "project snapshot not found")
-        return views[0]
-
-    return app
