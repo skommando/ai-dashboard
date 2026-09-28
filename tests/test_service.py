@@ -179,6 +179,63 @@ class ServiceTests(unittest.TestCase):
         self.assertLessEqual(current.stat().st_size, 1_048_576)
         self.assertLessEqual(backup.stat().st_size, 1_048_576)
 
+    def test_stable_heartbeat_is_written_about_once_per_second(self):
+        self.write_config([{"name": "reader", "command": [sys.executable, "-c", "import time; time.sleep(60)"]}])
+        self.launch()
+        self.wait_status(lambda s: s.get("components", [{}])[0].get("pid"))
+        state_file = self.runtime / "service-state.json"
+        previous = state_file.stat().st_mtime_ns
+        writes = 0
+        deadline = time.monotonic() + 2.2
+        while time.monotonic() < deadline:
+            current = state_file.stat().st_mtime_ns
+            if current != previous:
+                writes += 1
+                previous = current
+            time.sleep(0.05)
+        self.assertGreaterEqual(writes, 1)
+        self.assertLessEqual(writes, 3, "stable state should not fsync on every 0.1-second poll")
+
+    def test_child_launcher_does_not_start_component_without_release(self):
+        marker = self.runtime / "started.txt"
+        code = f"from pathlib import Path; Path({str(marker)!r}).write_text('started')"
+        self.write_config([{"name": "reader", "command": [sys.executable, "-c", code]}])
+        launcher = subprocess.Popen(
+            [sys.executable, str(SERVICE), "_child"], cwd=self.root,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        def clean_launcher():
+            if launcher.poll() is None:
+                launcher.kill()
+                launcher.wait(timeout=5)
+            for stream in (launcher.stdin, launcher.stdout, launcher.stderr):
+                stream.close()
+        self.addCleanup(clean_launcher)
+        time.sleep(0.25)
+        self.assertIsNone(launcher.poll(), "launcher must wait for a supervisor release")
+        self.assertFalse(marker.exists())
+        launcher.stdin.close()
+        launcher.wait(timeout=5)
+        self.assertFalse(marker.exists())
+
+    @unittest.skipUnless(os.name == "nt", "nested Job Object lifecycle is Windows-only")
+    def test_component_launcher_exit_cleans_descendants_before_restart(self):
+        child_pid_file = self.runtime / "grandchild.pid"
+        code = (
+            "import subprocess,sys; "
+            f"p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']); "
+            f"open({str(child_pid_file)!r},'w').write(str(p.pid)); "
+            "raise SystemExit(7)"
+        )
+        self.write_config([{"name": "reader", "command": [sys.executable, "-c", code]}])
+        self.launch()
+        self.wait_status(lambda s: s.get("components", [{}])[0].get("restarts", 0) >= 1)
+        grandchild_pid = int(child_pid_file.read_text(encoding="utf-8"))
+        deadline = time.monotonic() + 2
+        while process_exists(grandchild_pid) and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertFalse(process_exists(grandchild_pid), "old component tree survived launcher exit")
+
     @unittest.skipUnless(os.name == "nt", "PowerShell launcher is Windows-only")
     def test_powershell_launcher_handles_python_path_with_spaces(self):
         self.write_config([{"name": "reader", "command": [sys.executable, "-c", "import time; time.sleep(60)"]}])
@@ -198,6 +255,35 @@ class ServiceTests(unittest.TestCase):
             cwd=self.root, capture_output=True, text=True, timeout=8,
         )
         self.assertEqual(stopped.returncode, 0, stopped.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "PowerShell launcher is Windows-only")
+    def test_powershell_launcher_reports_component_start_failure(self):
+        self.write_config([{"name": "reader", "command": [str(self.root / "missing.exe")]}])
+        pythonw = str(Path(sys.executable).with_name("pythonw.exe"))
+        started = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
+             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw],
+            cwd=self.root, capture_output=True, text=True, timeout=16,
+        )
+        self.addCleanup(lambda: self.call("stop"))
+        if started.returncode == 0:
+            self.wait_status(lambda s: s.get("running"))
+        self.assertNotEqual(started.returncode, 0)
+        self.assertIn("launch_failed", started.stdout + started.stderr)
+        self.assertNotIn("top-secret-password", started.stdout + started.stderr)
+
+    @unittest.skipUnless(os.name == "nt", "PowerShell launcher is Windows-only")
+    def test_powershell_launcher_reports_invalid_config(self):
+        self.write_config([{"name": "reader", "command": []}])
+        pythonw = str(Path(sys.executable).with_name("pythonw.exe"))
+        started = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
+             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw],
+            cwd=self.root, capture_output=True, text=True, timeout=8,
+        )
+        self.assertNotEqual(started.returncode, 0)
+        self.assertFalse((self.runtime / "service-state.json").exists())
+        self.assertNotIn("top-secret-password", started.stdout + started.stderr)
 
 
 if __name__ == "__main__":

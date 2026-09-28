@@ -29,7 +29,7 @@ else:
 STATE_NAME = "service-state.json"
 LOCK_NAME = "service.lock"
 STOP_NAME = "service-stop.json"
-HEARTBEAT_SECONDS = 3
+HEARTBEAT_SECONDS = 5
 LOG_BYTES = 1_048_576
 
 
@@ -74,6 +74,9 @@ if os.name == "nt":
     _kernel32.SetInformationJobObject.restype = wintypes.BOOL
     _kernel32.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
     _kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+    _kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    _kernel32.IsProcessInJob.argtypes = (wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL))
+    _kernel32.IsProcessInJob.restype = wintypes.BOOL
     _kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
     _kernel32.CloseHandle.restype = wintypes.BOOL
 
@@ -98,6 +101,16 @@ class ChildJob:
         if self.handle and not _kernel32.AssignProcessToJobObject(self.handle, child._handle):
             if child.poll() is None:
                 raise RuntimeError("Could not assign child to process job")
+
+    def assign_current(self):
+        if self.handle and not _kernel32.AssignProcessToJobObject(self.handle, _kernel32.GetCurrentProcess()):
+            raise RuntimeError("Could not assign launcher to process job")
+
+    def contains(self, child):
+        if not self.handle:
+            return True
+        result = wintypes.BOOL()
+        return bool(_kernel32.IsProcessInJob(child._handle, self.handle, ctypes.byref(result)) and result.value)
 
     def close(self):
         if self.handle:
@@ -249,6 +262,75 @@ def end_child(child):
         child.wait(timeout=3)
 
 
+def launch_owned_component():
+    """Wait for the parent to assign this launcher to its job before spawn.
+
+    The launcher joins a nested job itself, so its sudden exit also closes
+    the actual component's job and kills any descendants before restart.
+    """
+    payload = sys.stdin.buffer.readline()
+    if not payload:
+        return 2
+    try:
+        spec = json.loads(payload)
+        nested_job = ChildJob()
+        try:
+            nested_job.assign_current()
+            try:
+                child = subprocess.Popen(
+                    spec["command"], cwd=spec["working_directory"],
+                    env={**os.environ, **spec["environment"]},
+                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    startupinfo=_hidden_startupinfo(), shell=False,
+                )
+            except OSError:
+                print("ERROR launch_failed", flush=True)
+                raise
+            if not nested_job.contains(child):
+                end_child(child)
+                raise RuntimeError("Component did not join launcher job")
+            log_thread = threading.Thread(
+                target=write_log,
+                args=(child.stdout, Path(spec["runtime_directory"]) / f"{spec['name']}.log"),
+                daemon=True,
+            )
+            log_thread.start()
+            print(f"READY {child.pid}", flush=True)
+            code = child.wait()
+            log_thread.join(timeout=1)
+            print(f"EXIT {code}", flush=True)
+        finally:
+            nested_job.close()
+        log_thread.join(timeout=2)
+        return code
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError):
+        print("ERROR component launch failed", flush=True)
+        return 1
+
+
+def read_launch_result(proxy, data):
+    try:
+        for raw in proxy.stdout:
+            line = raw.decode("ascii", errors="replace").strip()
+            if line.startswith("READY "):
+                pid = int(line.split(" ", 1)[1])
+                if data["process"] is proxy:
+                    data["ready_pid"] = pid
+                    data["last_error"] = None
+            elif line.startswith("EXIT "):
+                if data["process"] is proxy:
+                    data["reported_exit_code"] = int(line.split(" ", 1)[1])
+            elif line == "ERROR launch_failed":
+                if data["process"] is proxy:
+                    data["last_error"] = "launch_failed"
+    except (OSError, ValueError):
+        pass
+    finally:
+        proxy.stdout.close()
+
+
 def supervise(config):
     working, runtime, environment, components = load_config(config)
     runtime.mkdir(parents=True, exist_ok=True)
@@ -264,11 +346,14 @@ def supervise(config):
     stop_path = runtime / STOP_NAME
     stop_path.unlink(missing_ok=True)
     children = {item["name"]: {
-        "definition": item, "process": None, "log_thread": None,
+        "definition": item, "process": None, "control_thread": None,
+        "ready_pid": None, "published_pid": None, "reported_exit_code": None,
+        "last_error": None,
         "restarts": 0, "last_exit_code": None, "last_exit_at": None,
         "next_restart_at": None, "next_attempt": 0.0, "started_at": None,
     } for item in components}
     stopped = False
+    last_publish = 0.0
 
     def request_stop(*_args):
         nonlocal stopped
@@ -284,57 +369,85 @@ def supervise(config):
             "heartbeat_unix": time.time(), "updated_at": utc_now(),
             "components": [{
                 "name": name,
-                "pid": data["process"].pid if data["process"] and data["process"].poll() is None else None,
+                "pid": data["ready_pid"] if data["process"] and data["process"].poll() is None else None,
                 "restarts": data["restarts"], "last_exit_code": data["last_exit_code"],
                 "last_exit_at": data["last_exit_at"], "next_restart_at": data["next_restart_at"],
+                "last_error": data["last_error"],
             } for name, data in children.items()],
         }
         atomic_json(runtime / STATE_NAME, state)
+        for data in children.values():
+            data["published_pid"] = data["ready_pid"]
 
     try:
         while not stopped:
             now = time.monotonic()
+            dirty = False
             for name, data in children.items():
                 child = data["process"]
                 if child is not None and child.poll() is not None:
-                    data["last_exit_code"] = child.returncode
+                    dirty = True
+                    if data["control_thread"]:
+                        data["control_thread"].join(timeout=2)
+                        data["control_thread"] = None
+                    data["last_exit_code"] = (
+                        data["reported_exit_code"] if data["reported_exit_code"] is not None else child.returncode
+                    )
                     data["last_exit_at"] = time.time()
                     data["restarts"] += 1
                     delay = min(30.0, 0.5 * 2 ** min(data["restarts"] - 1, 6))
                     data["next_attempt"] = now + delay
                     data["next_restart_at"] = data["last_exit_at"] + delay
                     data["process"] = None
-                    if data["log_thread"]:
-                        data["log_thread"].join(timeout=2)
-                        data["log_thread"] = None
+                    data["ready_pid"] = None
+                    data["reported_exit_code"] = None
                 if data["process"] is None and now >= data["next_attempt"]:
+                    dirty = True
                     try:
                         child = subprocess.Popen(
-                            data["definition"]["command"], cwd=working,
-                            env={**os.environ, **environment}, stdin=subprocess.DEVNULL,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                            [sys.executable, str(Path(__file__).resolve()), "_child"],
+                            cwd=working, stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                             startupinfo=_hidden_startupinfo(), shell=False,
                         )
                         try:
                             job.assign(child)
+                            spec = {
+                                "name": name, "command": data["definition"]["command"],
+                                "working_directory": str(working),
+                                "runtime_directory": str(runtime), "environment": environment,
+                            }
+                            child.stdin.write((json.dumps(spec) + "\n").encode("utf-8"))
+                            child.stdin.close()
                         except RuntimeError:
+                            child.stdin.close()
+                            end_child(child)
+                            raise
+                        except OSError:
+                            child.stdin.close()
                             end_child(child)
                             raise
                         data["process"] = child
+                        data["ready_pid"] = None
+                        data["reported_exit_code"] = None
                         data["started_at"] = now
                         data["next_restart_at"] = None
-                        data["log_thread"] = threading.Thread(
-                            target=write_log, args=(child.stdout, runtime / f"{name}.log"), daemon=True
+                        data["control_thread"] = threading.Thread(
+                            target=read_launch_result, args=(child, data), daemon=True
                         )
-                        data["log_thread"].start()
+                        data["control_thread"].start()
                     except OSError:
                         data["restarts"] += 1
                         delay = min(30.0, 0.5 * 2 ** min(data["restarts"] - 1, 6))
                         data["last_exit_at"] = time.time()
                         data["next_attempt"] = now + delay
                         data["next_restart_at"] = data["last_exit_at"] + delay
-            publish(True)
+                if data["ready_pid"] != data["published_pid"]:
+                    dirty = True
+            if dirty or now - last_publish >= 1.0:
+                publish(True)
+                last_publish = now
             try:
                 request = json.loads(stop_path.read_text(encoding="utf-8"))
                 if request.get("instance_id") == instance_id:
@@ -345,8 +458,8 @@ def supervise(config):
     finally:
         for data in children.values():
             end_child(data["process"])
-            if data["log_thread"]:
-                data["log_thread"].join(timeout=2)
+            if data["control_thread"]:
+                data["control_thread"].join(timeout=2)
         publish(False)
         stop_path.unlink(missing_ok=True)
         job.close()
@@ -363,6 +476,8 @@ def _hidden_startupinfo():
 
 
 def main():
+    if len(sys.argv) == 2 and sys.argv[1] == "_child":
+        return launch_owned_component()
     parser = argparse.ArgumentParser(description="Local dashboard service supervisor")
     parser.add_argument("action", choices=("run", "status", "stop"))
     parser.add_argument("--config", type=Path, required=True)
