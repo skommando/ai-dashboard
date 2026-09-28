@@ -1,5 +1,5 @@
 [Unit]
-Description=ai-dashboard dedicated frp server
+Description=AI Dashboard application
 After=network-online.target
 Wants=network-online.target
 
@@ -7,9 +7,13 @@ Wants=network-online.target
 Type=simple
 User=ai-dashboard
 Group=ai-dashboard
-ExecStart=/usr/local/lib/ai-dashboard/frps -c /etc/ai-dashboard/frps.toml
+WorkingDirectory=@ROOT@/current
+EnvironmentFile=@ROOT@/shared/dashboard.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=@ROOT@/current/.venv/bin/python -m dashboard.server --host 127.0.0.1 --port 8810
 Restart=on-failure
 RestartSec=5s
+UMask=0077
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
@@ -22,6 +26,7 @@ RestrictSUIDSGID=yes
 LockPersonality=yes
 CapabilityBoundingSet=
 AmbientCapabilities=
+ReadWritePaths=@ROOT@/shared/data
 
 [Install]
 WantedBy=multi-user.target

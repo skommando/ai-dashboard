@@ -1,8 +1,0 @@
-# Replace the placeholder with a random base64url/hex token (32+ characters).
-# Upload the filled config privately; never commit it.
-bindAddr = "0.0.0.0"
-bindPort = 8072
-proxyBindAddr = "127.0.0.1"
-allowPorts = [{ single = 8083 }]
-auth.method = "token"
-auth.token = "REPLACE_WITH_RANDOM_TOKEN"
