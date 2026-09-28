@@ -245,6 +245,16 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(upload["security"], [{"ViewerBasic": [], "ProjectToken": []}])
         self.assertEqual(revision["security"], [{"ViewerBasic": [], "ProjectToken": []}])
         self.assertEqual(document["paths"]["/api/v1/projects"]["get"]["security"], [{"ViewerBasic": []}])
+        for path, method in (("/api/v1/projects/{project_id}", "get"),
+                             ("/api/v1/projects/{project_id}/revision", "get"),
+                             ("/api/v1/projects/{project_id}/snapshot", "put")):
+            project_id = next(parameter for parameter in document["paths"][path][method]["parameters"]
+                              if parameter["in"] == "path" and parameter["name"] == "project_id")
+            self.assertEqual(project_id["schema"]["minLength"], 1)
+            self.assertEqual(project_id["schema"]["maxLength"], 80)
+            self.assertEqual(project_id["schema"]["pattern"], "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
+        self.assertIn("401", revision["responses"])
+        self.assertIn("project_id", revision["responses"]["401"]["description"])
         self.assertIn("200", upload["responses"])
         self.assertIn("schema", upload["responses"]["200"]["content"]["application/json"])
         idempotency = [parameter for parameter in upload["parameters"]

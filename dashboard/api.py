@@ -197,6 +197,20 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str) 
             snapshot_schema = Snapshot.model_json_schema(ref_template="#/components/schemas/{model}")
             schemas.update(snapshot_schema.pop("$defs", {}))
             schemas["Snapshot"] = snapshot_schema
+            for path, method in (("/api/v1/projects/{project_id}", "get"),
+                                 ("/api/v1/projects/{project_id}/revision", "get"),
+                                 ("/api/v1/projects/{project_id}/snapshot", "put")):
+                operation = document["paths"][path][method]
+                project_id = next(parameter for parameter in operation["parameters"]
+                                  if parameter["in"] == "path" and parameter["name"] == "project_id")
+                project_id["schema"].update({"minLength": 1, "maxLength": 80,
+                                             "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"})
+            for method, path in (("get", "/api/v1/projects/{project_id}/revision"),
+                                 ("put", "/api/v1/projects/{project_id}/snapshot")):
+                document["paths"][path][method]["responses"]["401"]["description"] = (
+                    "Basic Auth、project_id 或项目令牌无效")
+            document["paths"]["/api/v1/projects/{project_id}/revision"]["get"]["responses"]["422"]["description"] = (
+                "框架请求参数校验失败；无效 project_id 按 401 返回")
             app.openapi_schema = document
         return app.openapi_schema
 
