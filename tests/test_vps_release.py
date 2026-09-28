@@ -27,6 +27,25 @@ local = load("local_release", ROOT / "scripts/release.py")
 
 
 class SourceTests(unittest.TestCase):
+    def test_rollback_refuses_dirty_target_before_backup_or_switch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = vps.Release(Path(directory) / "app")
+            sha = "a" * 40
+            target = manager.releases / sha
+            (target / ".venv/bin").mkdir(parents=True)
+            (target / ".venv/bin/python").write_text("")
+            def fake_run(*args, **kwargs):
+                return " M dashboard/server.py" if "status" in args else sha
+            with mock.patch.object(vps, "run", side_effect=fake_run), \
+                 mock.patch.object(vps, "read_environment", return_value={}), \
+                 mock.patch.object(manager, "current"), \
+                 mock.patch.object(manager, "backup") as backup, \
+                 mock.patch.object(manager, "switch") as switch:
+                with self.assertRaisesRegex(ValueError, "存在改动"):
+                    manager._rollback_locked(sha)
+                backup.assert_not_called()
+                switch.assert_not_called()
+
     def test_server_auth_must_be_enabled_at_server_level(self):
         header = "server {\n listen 443 ssl;\n auth_basic_user_file /private/htpasswd;\n"
         self.assertTrue(vps.server_has_basic(header + ' auth_basic "viewer";\n location / { }\n}\n'))
@@ -214,6 +233,7 @@ class RecoveryTests(unittest.TestCase):
 
             with mock.patch.object(manager, "backup", return_value=base / "backup"), \
                  mock.patch.object(manager, "switch", side_effect=switch), \
+                 mock.patch.object(manager, "validate_release", return_value=old), \
                  mock.patch.object(vps, "run", side_effect=lambda *a, **k: "a" * 40 if a[:2] == ("git", "-C") else ""):
                 with self.assertRaisesRegex(RuntimeError, "health failed"):
                     manager._rollback_locked("a" * 40)

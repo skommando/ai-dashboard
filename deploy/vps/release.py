@@ -245,16 +245,10 @@ class Release:
         if fetched != sha:
             raise ValueError("拉取后 main 已变化；请重新审核 SHA")
 
-    def stage(self, sha, python):
+    def validate_release(self, sha, require_ready=False):
         release = self.releases / sha
-        if release.is_symlink():
-            raise ValueError("release 不能是符号链接")
-        if not release.exists():
-            previous_umask = os.umask(0o022)
-            try:
-                run("git", "--git-dir=" + str(self.repo), "worktree", "add", "--detach", str(release), sha)
-            finally:
-                os.umask(previous_umask)
+        if release.is_symlink() or not release.is_dir():
+            raise ValueError("release 目录无效")
         checked = run("git", "-C", str(release), "rev-parse", "HEAD", capture=True)
         if checked != sha:
             raise ValueError("release SHA 不匹配")
@@ -275,6 +269,23 @@ class Release:
         ready = venv / ".dashboard-ready"
         if ready.exists() and ready.read_text(encoding="ascii").strip() != sha:
             raise ValueError("release venv 就绪标记与 SHA 不符")
+        if require_ready and (not ready.is_file() or not (venv / "bin/python").is_file()):
+            raise ValueError("release 尚未安装完成")
+        return release
+
+    def stage(self, sha, python):
+        release = self.releases / sha
+        if release.is_symlink():
+            raise ValueError("release 不能是符号链接")
+        if not release.exists():
+            previous_umask = os.umask(0o022)
+            try:
+                run("git", "--git-dir=" + str(self.repo), "worktree", "add", "--detach", str(release), sha)
+            finally:
+                os.umask(previous_umask)
+        self.validate_release(sha)
+        venv = release / ".venv"
+        ready = venv / ".dashboard-ready"
         if not ready.exists():
             previous_umask = os.umask(0o022)
             try:
@@ -384,12 +395,8 @@ class Release:
             self._rollback_locked(sha)
 
     def _rollback_locked(self, sha):
+        target = self.validate_release(sha, require_ready=True)
         environment = read_environment(self.environment_file)
-        target = self.releases / sha
-        if target.is_symlink() or not target.is_dir() or not (target / ".venv/bin/python").is_file():
-            raise ValueError("回滚目标不是已准备的 release")
-        if run("git", "-C", str(target), "rev-parse", "HEAD", capture=True) != sha:
-            raise ValueError("回滚目标 SHA 不匹配")
         previous = self.current.resolve(strict=True)
         backup = self.backup(sha)
         try:
