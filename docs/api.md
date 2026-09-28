@@ -28,6 +28,10 @@ python -m dashboard.server --role write --host 127.0.0.1 --port 8811
 
 服务只允许绑定 `127.0.0.1`。读取服务的 `/`、`/healthz`、`/api/v1/projects`、`/api/v1/projects/{id}` 均要求 Basic Auth，所有响应标记 `Cache-Control: no-store`。未上报项目的单项查询返回 404。读取应用不注册写入路由、`/docs` 或 `/openapi.json`。写入应用提供无鉴权的通用 `/healthz`，以及本机 `/docs`、`/openapi.json`。
 
+写入端 OpenAPI 的 `components/schemas` 包含完整快照模型，所有本地 `$ref` 都可从文档根解析。快照 PUT 与 revision GET 均声明 Bearer 认证；快照 PUT 另声明必填 `Idempotency-Key` 请求头，因此可在本机 `/docs` 直接填写认证与幂等键后调用。
+
+读取端 Basic Auth 按 UTF-8 处理用户名和密码，401 挑战头也声明 UTF-8；Unicode 凭据与 ASCII 凭据均可使用。
+
 ## 快照格式与计量
 
 示例文件为 [sample-snapshot.json](../examples/sample-snapshot.json)。`PUT /api/v1/projects/{project_id}/snapshot` 请求头必须有 `Authorization: Bearer <该项目token>`、`Idempotency-Key: <稳定且唯一的请求ID>` 与 `Content-Type: application/json`。请求体最大 1 MiB，`schema_version` 固定为 1。JSON 拒绝未知字段、重复键和错误类型；日期必须为含时区的 ISO 8601 时间。项目 ID、Wave ID、Task ID 为 1–80 位稳定标识，首位字母或数字，其余可含点、横线、下划线。`Idempotency-Key` 为 1–128 位同类可打印标识，额外允许冒号。

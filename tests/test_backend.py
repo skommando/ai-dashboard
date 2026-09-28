@@ -1,4 +1,5 @@
 import copy
+import base64
 import json
 import sqlite3
 import tempfile
@@ -79,6 +80,7 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(self.view("/").text, "real front end")
         schema = self.write.get("/openapi.json").json()
         self.assertIn("put", schema["paths"]["/api/v1/projects/{project_id}/snapshot"])
+        self.assertEqual(self.write.get("/docs").status_code, 200)
 
     def test_atomic_snapshot_progress_and_replay_survive_restart(self):
         response = self.send()
@@ -158,6 +160,11 @@ class BackendContractTests(unittest.TestCase):
                                            "Idempotency-Key": "huge",
                                            "Content-Type": "application/json"}, content=huge)
         self.assertEqual(response.status_code, 413)
+        unauthorized = self.write.put("/api/v1/projects/one/snapshot",
+                                      headers={"Authorization": "Bearer wrong",
+                                               "Idempotency-Key": "huge",
+                                               "Content-Type": "application/json"}, content=huge)
+        self.assertEqual(unauthorized.status_code, 401)
         empty_complete = snapshot()
         empty_complete["project"].update(status="complete", waves=[], currentWave=None)
         self.assertEqual(self.send(empty_complete, "complete-empty").status_code, 422)
@@ -191,6 +198,53 @@ class BackendContractTests(unittest.TestCase):
         self.assertEqual(response.json()["error"]["code"], "storage_error")
         self.assertNotIn("receipts", response.text)
         self.assertNotIn(self.db, response.text)
+
+    def test_openapi_refs_and_report_auth_headers_are_machine_readable(self):
+        document = self.write.get("/openapi.json").json()
+        refs = []
+        nodes = [document]
+        while nodes:
+            node = nodes.pop()
+            if isinstance(node, dict):
+                if "$ref" in node:
+                    refs.append(node["$ref"])
+                nodes.extend(node.values())
+            elif isinstance(node, list):
+                nodes.extend(node)
+        self.assertTrue(refs)
+        for ref in refs:
+            self.assertTrue(ref.startswith("#/"), ref)
+            target = document
+            for segment in ref[2:].split("/"):
+                target = target[segment.replace("~1", "/").replace("~0", "~")]
+            self.assertIsInstance(target, dict, ref)
+
+        upload = document["paths"]["/api/v1/projects/{project_id}/snapshot"]["put"]
+        revision = document["paths"]["/api/v1/projects/{project_id}/revision"]["get"]
+        scheme = document["components"]["securitySchemes"]["ProjectBearer"]
+        self.assertEqual(scheme, {"type": "http", "scheme": "bearer"})
+        self.assertIn({"ProjectBearer": []}, upload["security"])
+        self.assertIn({"ProjectBearer": []}, revision["security"])
+        idempotency = [parameter for parameter in upload["parameters"]
+                       if parameter["in"] == "header" and parameter["name"] == "Idempotency-Key"]
+        self.assertEqual(len(idempotency), 1)
+        self.assertTrue(idempotency[0]["required"])
+        self.assertIn("application/json", upload["requestBody"]["content"])
+
+    def test_basic_auth_handles_unicode_configuration_and_inputs(self):
+        from dashboard.api import create_read_app
+        unicode_view = TestClient(create_read_app(self.db, self.web, "用户", "密碼"))
+        challenge = unicode_view.get("/healthz")
+        self.assertEqual(challenge.status_code, 401)
+        self.assertIn('charset="UTF-8"', challenge.headers["WWW-Authenticate"])
+
+        def basic(username, password):
+            encoded = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+            return {"Authorization": f"Basic {encoded}"}
+
+        self.assertEqual(unicode_view.get("/healthz", headers=basic("用户", "密碼")).status_code, 200)
+        self.assertEqual(unicode_view.get("/healthz", headers=basic("用户", "错误")).status_code, 401)
+        self.assertEqual(self.read.get("/healthz", headers=basic("viewer", "错误")).status_code, 401)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import ValidationError
 
@@ -20,7 +21,8 @@ from .store import (AuthenticationChanged, KeyConflict, RevisionConflict,
 
 MAX_BODY = 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}\Z")
-KEY_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}\Z")
+KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+BEARER_SECURITY = [{"ProjectBearer": []}]
 
 
 def now_iso() -> str:
@@ -59,7 +61,9 @@ def create_write_app(db_path: str) -> FastAPI:
     def health():
         return {"status": "ok"}
 
-    @app.get("/api/v1/projects/{project_id}/revision", responses={401: {"description": "无效项目令牌"}})
+    @app.get("/api/v1/projects/{project_id}/revision",
+             openapi_extra={"security": BEARER_SECURITY},
+             responses={401: {"description": "无效项目令牌"}})
     def revision(project_id: str, request: Request):
         token = bearer(request)
         if not ID_PATTERN.fullmatch(project_id) or token is None:
@@ -71,8 +75,15 @@ def create_write_app(db_path: str) -> FastAPI:
 
     @app.put(
         "/api/v1/projects/{project_id}/snapshot",
-        openapi_extra={"requestBody": {"required": True, "content": {"application/json":
-                       {"schema": Snapshot.model_json_schema()}}}},
+        openapi_extra={
+            "security": BEARER_SECURITY,
+            "parameters": [{"name": "Idempotency-Key", "in": "header", "required": True,
+                            "description": "同一请求重试时保持不变的唯一键",
+                            "schema": {"type": "string", "minLength": 1, "maxLength": 128,
+                                       "pattern": KEY_PATTERN.pattern}}],
+            "requestBody": {"required": True, "content": {"application/json":
+                            {"schema": {"$ref": "#/components/schemas/Snapshot"}}}},
+        },
         responses={401: {"description": "无效项目令牌"},
                    409: {"description": "revision 或幂等键冲突"},
                    413: {"description": "请求体超过 1 MiB"},
@@ -112,6 +123,21 @@ def create_write_app(db_path: str) -> FastAPI:
                          current_revision=conflict.current_revision)
         return result
 
+    def openapi():
+        if app.openapi_schema is None:
+            document = get_openapi(title=app.title, version=app.version, routes=app.routes)
+            components = document.setdefault("components", {})
+            components.setdefault("securitySchemes", {})["ProjectBearer"] = {
+                "type": "http", "scheme": "bearer"
+            }
+            schemas = components.setdefault("schemas", {})
+            snapshot_schema = Snapshot.model_json_schema(ref_template="#/components/schemas/{model}")
+            schemas.update(snapshot_schema.pop("$defs", {}))
+            schemas["Snapshot"] = snapshot_schema
+            app.openapi_schema = document
+        return app.openapi_schema
+
+    app.openapi = openapi
     return app
 
 
@@ -125,8 +151,11 @@ def _valid_basic(request: Request, username: str, password: str) -> bool:
     except (binascii.Error, UnicodeDecodeError):
         return False
     supplied_user, separator, supplied_password = decoded.partition(":")
-    return bool(separator and hmac.compare_digest(supplied_user, username)
-                and hmac.compare_digest(supplied_password, password))
+    if not separator:
+        return False
+    user_matches = hmac.compare_digest(supplied_user.encode("utf-8"), username.encode("utf-8"))
+    password_matches = hmac.compare_digest(supplied_password.encode("utf-8"), password.encode("utf-8"))
+    return user_matches and password_matches
 
 
 def create_read_app(db_path: str, web_dir: str | Path, username: str, password: str) -> FastAPI:
@@ -141,7 +170,7 @@ def create_read_app(db_path: str, web_dir: str | Path, username: str, password: 
     async def protect(request: Request, call_next):
         if not _valid_basic(request, username, password):
             response = error(401, "unauthorized", "Basic authentication required")
-            response.headers["WWW-Authenticate"] = 'Basic realm="AI Dashboard"'
+            response.headers["WWW-Authenticate"] = 'Basic realm="AI Dashboard", charset="UTF-8"'
         else:
             response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
