@@ -331,7 +331,7 @@ def read_launch_result(proxy, data):
         proxy.stdout.close()
 
 
-def supervise(config):
+def supervise(config, requested_instance_id=None):
     working, runtime, environment, components = load_config(config)
     runtime.mkdir(parents=True, exist_ok=True)
     lock = InstanceLock(runtime / LOCK_NAME)
@@ -342,7 +342,7 @@ def supervise(config):
     except RuntimeError:
         lock.close()
         raise
-    instance_id = uuid.uuid4().hex
+    instance_id = requested_instance_id or uuid.uuid4().hex
     stop_path = runtime / STOP_NAME
     stop_path.unlink(missing_ok=True)
     children = {item["name"]: {
@@ -481,11 +481,16 @@ def main():
     parser = argparse.ArgumentParser(description="Local dashboard service supervisor")
     parser.add_argument("action", choices=("run", "status", "stop"))
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--instance-id", help="optional 32-character instance identity for run or stop")
     args = parser.parse_args()
     try:
+        if args.instance_id is not None and not re.fullmatch(r"[0-9a-f]{32}", args.instance_id):
+            raise ValueError("Invalid instance identity")
+        if args.action == "status" and args.instance_id is not None:
+            raise ValueError("Instance identity is only valid for run or stop")
         _working, runtime, _environment, _components = load_config(args.config)
         if args.action == "run":
-            supervise(args.config)
+            supervise(args.config, args.instance_id)
             return 0
         state = read_live_state(runtime)
         if args.action == "status":
@@ -493,6 +498,8 @@ def main():
             return 0
         if state is None:
             raise RuntimeError("No live supervisor")
+        if args.instance_id is not None and state["instance_id"] != args.instance_id:
+            raise RuntimeError("Supervisor instance does not match")
         atomic_json(runtime / STOP_NAME, {"instance_id": state["instance_id"]})
         deadline = time.monotonic() + 12
         while time.monotonic() < deadline:

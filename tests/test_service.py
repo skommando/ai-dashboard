@@ -9,11 +9,15 @@ import sys
 import tempfile
 import time
 import unittest
+import uuid
 
 
 SERVICE = Path(__file__).resolve().parents[1] / "scripts" / "service.py"
 START_SCRIPT = SERVICE.with_name("start-dashboard.ps1")
 STOP_SCRIPT = SERVICE.with_name("stop-dashboard.ps1")
+ROOT_VENV_PYTHON = Path(os.environ.get(
+    "DASHBOARD_TEST_VENV_PYTHON", r"D:\example-user\repos\ai-dashboard\.venv\Scripts\python.exe"
+))
 
 
 def process_exists(pid):
@@ -53,9 +57,12 @@ class ServiceTests(unittest.TestCase):
         }
         self.config.write_text(json.dumps(data), encoding="utf-8")
 
-    def call(self, action):
+    def call(self, action, instance_id=None):
+        command = [sys.executable, str(SERVICE), action, "--config", str(self.config)]
+        if instance_id is not None:
+            command.extend(["--instance-id", instance_id])
         return subprocess.run(
-            [sys.executable, str(SERVICE), action, "--config", str(self.config)],
+            command,
             cwd=self.root, capture_output=True, text=True, timeout=8,
         )
 
@@ -112,6 +119,15 @@ class ServiceTests(unittest.TestCase):
         duplicate = self.call("run")
         self.assertNotEqual(duplicate.returncode, 0)
         self.assertEqual(len(json.loads(self.call("status").stdout)["components"]), 1)
+
+    def test_stop_requires_matching_instance_id_when_supplied(self):
+        self.write_config([{"name": "reader", "command": [sys.executable, "-c", "import time; time.sleep(60)"]}])
+        self.launch()
+        state = self.wait_status(lambda s: s.get("components", [{}])[0].get("pid"))
+        wrong = self.call("stop", instance_id=uuid.uuid4().hex)
+        self.assertNotEqual(wrong.returncode, 0)
+        self.assertIn("instance", wrong.stderr.lower())
+        self.assertEqual(self.call("stop", instance_id=state["instance_id"]).returncode, 0)
 
     def test_crashed_child_restarts_with_delay_and_state_excludes_secrets(self):
         attempts = self.runtime / "attempts.txt"
@@ -239,33 +255,54 @@ class ServiceTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "PowerShell launcher is Windows-only")
     def test_powershell_launcher_handles_python_path_with_spaces(self):
         self.write_config([{"name": "reader", "command": [sys.executable, "-c", "import time; time.sleep(60)"]}])
-        pythonw = str(Path(sys.executable).with_name("pythonw.exe"))
+        system_python = str(Path(sys.base_prefix) / "python.exe")
+        pythonw = str(Path(sys.base_prefix) / "pythonw.exe")
+        instance_id = uuid.uuid4().hex
         self.assertTrue(Path(pythonw).exists())
+        self.addCleanup(lambda: self.call("stop", instance_id=instance_id))
         started = subprocess.run(
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
-             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw],
+             "-Config", str(self.config), "-Python", system_python, "-Pythonw", pythonw,
+             "-InstanceId", instance_id],
             cwd=self.root, capture_output=True, text=True, timeout=8,
         )
         self.assertEqual(started.returncode, 0, started.stderr)
-        self.addCleanup(lambda: self.call("stop"))
-        self.wait_status(lambda s: s.get("running") and s.get("components", [{}])[0].get("pid"))
+        self.wait_status(lambda s: s.get("instance_id") == instance_id and s.get("components", [{}])[0].get("pid"))
         stopped = subprocess.run(
             ["powershell.exe", "-NoProfile", "-File", str(STOP_SCRIPT),
-             "-Config", str(self.config), "-Python", sys.executable],
+             "-Config", str(self.config), "-Python", system_python],
             cwd=self.root, capture_output=True, text=True, timeout=8,
         )
         self.assertEqual(stopped.returncode, 0, stopped.stderr)
+
+    @unittest.skipUnless(os.name == "nt" and ROOT_VENV_PYTHON.exists(), "redirecting venv pythonw unavailable")
+    def test_powershell_launcher_handles_redirecting_venv_pythonw(self):
+        self.write_config([{"name": "reader", "command": [str(ROOT_VENV_PYTHON), "-c", "import time; time.sleep(60)"]}])
+        instance_id = uuid.uuid4().hex
+        self.addCleanup(lambda: self.call("stop", instance_id=instance_id))
+        started = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
+             "-Config", str(self.config), "-Python", str(ROOT_VENV_PYTHON),
+             "-Pythonw", str(ROOT_VENV_PYTHON.with_name("pythonw.exe")),
+             "-InstanceId", instance_id],
+            cwd=self.root, capture_output=True, text=True, timeout=13,
+        )
+        self.assertEqual(started.returncode, 0, started.stderr)
+        state = self.wait_status(lambda s: s.get("instance_id") == instance_id and s.get("components", [{}])[0].get("pid"))
+        self.assertTrue(state["running"])
 
     @unittest.skipUnless(os.name == "nt", "PowerShell launcher is Windows-only")
     def test_powershell_launcher_reports_component_start_failure(self):
         self.write_config([{"name": "reader", "command": [str(self.root / "missing.exe")]}])
         pythonw = str(Path(sys.executable).with_name("pythonw.exe"))
+        instance_id = uuid.uuid4().hex
+        self.addCleanup(lambda: self.call("stop", instance_id=instance_id))
         started = subprocess.run(
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
-             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw],
+             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw,
+             "-InstanceId", instance_id],
             cwd=self.root, capture_output=True, text=True, timeout=16,
         )
-        self.addCleanup(lambda: self.call("stop"))
         if started.returncode == 0:
             self.wait_status(lambda s: s.get("running"))
         self.assertNotEqual(started.returncode, 0)
@@ -276,9 +313,12 @@ class ServiceTests(unittest.TestCase):
     def test_powershell_launcher_reports_invalid_config(self):
         self.write_config([{"name": "reader", "command": []}])
         pythonw = str(Path(sys.executable).with_name("pythonw.exe"))
+        instance_id = uuid.uuid4().hex
+        self.addCleanup(lambda: self.call("stop", instance_id=instance_id))
         started = subprocess.run(
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
-             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw],
+             "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw,
+             "-InstanceId", instance_id],
             cwd=self.root, capture_output=True, text=True, timeout=8,
         )
         self.assertNotEqual(started.returncode, 0)
