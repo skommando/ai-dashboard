@@ -1,0 +1,13 @@
+[Unit]
+Description=Limit ai-dashboard frp forwarding port to local Nginx
+After=network-pre.target
+Before=frps.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/lib/ai-dashboard/firewall.sh apply
+ExecStop=/usr/local/lib/ai-dashboard/firewall.sh remove
+
+[Install]
+WantedBy=multi-user.target
