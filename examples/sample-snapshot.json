@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "expected_revision": 0,
+  "observed_at": "2026-09-28T08:00:00Z",
+  "change_note": "示例：完成接入验证",
+  "project": {
+    "name": "示例项目",
+    "shortName": "示例",
+    "description": "演示上报文件格式；不会自动写入数据库",
+    "summary": "接口检查通过",
+    "status": "active",
+    "acceptance": "not_required",
+    "category": "个人工具",
+    "glyph": "book",
+    "color": "sage",
+    "currentWave": "wave-implementation",
+    "waves": [
+      {
+        "id": "wave-implementation",
+        "name": "实现",
+        "defined": true,
+        "acceptance": "not_required",
+        "tasks": [
+          {
+            "id": "task-api",
+            "code": "API-01",
+            "title": "实现上报接口",
+            "status": "done",
+            "verified": true,
+            "acceptance": "not_required",
+            "goal": "稳定接收项目快照",
+            "summary": "检查通过",
+            "updatedAt": "2026-09-28T08:00:00Z",
+            "evidence": [{"label": "检查", "text": "接口回归通过"}],
+            "children": [{"title": "输入校验", "status": "done"}]
+          }
+        ]
+      }
+    ],
+    "updates": [{"at": "2026-09-28T08:00:00Z", "tone": "done", "text": "接口检查通过", "detail": "API-01"}]
+  }
+}
