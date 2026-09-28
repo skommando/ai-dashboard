@@ -124,7 +124,7 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 if ! id -u ai-dashboard >/dev/null 2>&1; then
-    useradd --system --no-create-home --shell /usr/sbin/nologin ai-dashboard
+    useradd --system --user-group --no-create-home --shell /usr/sbin/nologin ai-dashboard
     created_user=1
 fi
 if (( created_config_dir )); then install -d -m 750 -o root -g ai-dashboard /etc/ai-dashboard; fi
