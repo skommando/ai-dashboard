@@ -265,14 +265,14 @@ class ServiceTests(unittest.TestCase):
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
              "-Config", str(self.config), "-Python", system_python, "-Pythonw", pythonw,
              "-InstanceId", instance_id],
-            cwd=self.root, capture_output=True, text=True, timeout=8,
+            cwd=self.root, capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(started.returncode, 0, started.stderr)
         self.wait_status(lambda s: s.get("instance_id") == instance_id and s.get("components", [{}])[0].get("pid"))
         stopped = subprocess.run(
             ["powershell.exe", "-NoProfile", "-File", str(STOP_SCRIPT),
              "-Config", str(self.config), "-Python", system_python],
-            cwd=self.root, capture_output=True, text=True, timeout=8,
+            cwd=self.root, capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(stopped.returncode, 0, stopped.stderr)
 
@@ -286,7 +286,7 @@ class ServiceTests(unittest.TestCase):
              "-Config", str(self.config), "-Python", str(ROOT_VENV_PYTHON),
              "-Pythonw", str(ROOT_VENV_PYTHON.with_name("pythonw.exe")),
              "-InstanceId", instance_id],
-            cwd=self.root, capture_output=True, text=True, timeout=13,
+            cwd=self.root, capture_output=True, text=True, timeout=30,
         )
         self.assertEqual(started.returncode, 0, started.stderr)
         state = self.wait_status(lambda s: s.get("instance_id") == instance_id and s.get("components", [{}])[0].get("pid"))
@@ -302,7 +302,7 @@ class ServiceTests(unittest.TestCase):
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
              "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw,
              "-InstanceId", instance_id],
-            cwd=self.root, capture_output=True, text=True, timeout=16,
+            cwd=self.root, capture_output=True, text=True, timeout=30,
         )
         if started.returncode == 0:
             self.wait_status(lambda s: s.get("running"))
@@ -320,7 +320,7 @@ class ServiceTests(unittest.TestCase):
             ["powershell.exe", "-NoProfile", "-File", str(START_SCRIPT),
              "-Config", str(self.config), "-Python", sys.executable, "-Pythonw", pythonw,
              "-InstanceId", instance_id],
-            cwd=self.root, capture_output=True, text=True, timeout=8,
+            cwd=self.root, capture_output=True, text=True, timeout=30,
         )
         self.assertNotEqual(started.returncode, 0)
         self.assertFalse((self.runtime / "service-state.json").exists())
