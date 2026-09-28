@@ -1,22 +1,20 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>进度簿 · 手机预览</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#e9ede7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:#60735b}.preview{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;gap:48px}.note{max-width:180px}.note h1{font-size:22px;font-weight:550;color:#304b2d;letter-spacing:-.02em}.note p{font-size:12px;line-height:1.9}.note label{display:block;font-size:11px;margin:20px 0 8px}select{padding:9px 12px;border:1px solid #c6d1bf;background:#f7faf2;color:#526d47;border-radius:5px;font:12px inherit}iframe{display:block;width:390px;height:844px;max-height:calc(100vh - 64px);border:1px solid #c9d3c0;border-radius:20px;background:#f5f6f3;box-shadow:0 15px 45px #334a2520}.caption{font-size:10px;color:#8d9e7f;margin-top:21px}@media(max-width:600px){.preview{padding:0;display:block}.note{display:none}iframe{width:100%!important;height:100vh;height:100dvh;max-height:none;border:0;border-radius:0;box-shadow:none}}</style></head><body><main class="preview"><div class="note"><h1>进度簿</h1><p>手机端交互预览。<br>项目、阶段和任务，<br>按阅读顺序逐层展开。</p><label for="preview-width">预览宽度</label><select id="preview-width"><option value="375">375 px · 窄屏</option><option value="390" selected>390 px · 标准</option><option value="430">430 px · 大屏</option></select><p class="caption">同一套页面 · 演示数据<br>在手机上打开时自动铺满屏幕。</p></div><iframe id="phone" title="手机端进度看板" srcdoc="<!doctype html>
-<html lang=&quot;zh-CN&quot;>
+<html lang="zh-CN">
 <head>
-  <meta charset=&quot;UTF-8&quot;>
-  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, viewport-fit=cover&quot;>
-  <meta name=&quot;theme-color&quot; content=&quot;#F5F6F3&quot;>
-  <meta name=&quot;description&quot; content=&quot;个人项目进度看板，只读交互演示。&quot;>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5F6F3">
+  <meta name="description" content="个人项目进度看板，只读查看真实上报。">
   <title>进度簿 · 项目总览</title>
-  <link rel=&quot;icon&quot; href=&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23537565'/%3E%3Cpath d='M12 28V12M20 28V17M28 28V22' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E&quot;>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23537565'/%3E%3Cpath d='M12 28V12M20 28V17M28 28V22' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
   <style>:root {
   color-scheme: light;
   --canvas: #f5f6f3; --surface: #fff; --sidebar: #eef0eb;
   --ink: #202b27; --muted: #69756f; --faint: #8a938c; --line: #e3e7e1;
   --accent: #537565; --accent-dark: #365646; --accent-soft: #edf3ee;
   --amber: #986124; --amber-soft: #faf2e5; --red: #a45446; --red-soft: #faeeeb;
-  --blue: #557386; --mono: &quot;SFMono-Regular&quot;, Consolas, &quot;Liberation Mono&quot;, monospace;
-  --sans: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;PingFang SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif;
+  --blue: #557386; --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; min-height: 100%; }
@@ -143,13 +141,13 @@ progress::-webkit-progress-bar { background: #e8ede5; border-radius: 6px; }
 progress::-webkit-progress-value { background: var(--accent); border-radius: 6px; }
 progress::-moz-progress-bar { background: var(--accent); border-radius: 6px; }
 progress.blocked { color: var(--red); }
-progress.blocked::-webkit-progress-value, .project-row[data-status=&quot;blocked&quot;] progress::-webkit-progress-value { background: var(--red); }
-progress.blocked::-moz-progress-bar, .project-row[data-status=&quot;blocked&quot;] progress::-moz-progress-bar { background: var(--red); }
+progress.blocked::-webkit-progress-value, .project-row[data-status="blocked"] progress::-webkit-progress-value { background: var(--red); }
+progress.blocked::-moz-progress-bar, .project-row[data-status="blocked"] progress::-moz-progress-bar { background: var(--red); }
 progress.review { color: var(--amber); }
-progress.review::-webkit-progress-value, .project-row[data-status=&quot;review&quot;] progress::-webkit-progress-value { background: var(--amber); }
-progress.review::-moz-progress-bar, .project-row[data-status=&quot;review&quot;] progress::-moz-progress-bar { background: var(--amber); }
-.project-row[data-status=&quot;complete&quot;] progress::-webkit-progress-value { background: #91a187; }
-.project-row[data-status=&quot;complete&quot;] progress::-moz-progress-bar { background: #91a187; }
+progress.review::-webkit-progress-value, .project-row[data-status="review"] progress::-webkit-progress-value { background: var(--amber); }
+progress.review::-moz-progress-bar, .project-row[data-status="review"] progress::-moz-progress-bar { background: var(--amber); }
+.project-row[data-status="complete"] progress::-webkit-progress-value { background: #91a187; }
+.project-row[data-status="complete"] progress::-moz-progress-bar { background: #91a187; }
 .row-count { font: 10px var(--mono); color: #8d9788; min-width: 33px; text-align: right; }
 .row-count b { color: #5d715b; font-weight: 500; }
 .row-percent { font: 11px var(--mono); min-width: 30px; color: #657860; text-align: right; }
@@ -157,7 +155,7 @@ progress.review::-moz-progress-bar, .project-row[data-status=&quot;review&quot;]
 .unplanned-track { flex: 1; height: 4px; border-radius: 5px; background: repeating-linear-gradient(90deg, #dfe4d8 0, #dfe4d8 5px, transparent 5px, transparent 9px); }
 .list-footer { display: flex; align-items: center; gap: 6px; color: #97a18f; font-size: 9px; flex: 0 0 auto; padding: 13px 2px 0; }
 .snapshot-dot { width: 4px; height: 4px; border-radius: 50%; background: #99a88f; }
-body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&quot;offline&quot;] .source-dot { background: var(--red); }
+body[data-connection="offline"] .snapshot-dot, body[data-connection="offline"] .source-dot { background: var(--red); }
 .read-only-label { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .read-only-label svg { width: 12px; height: 12px; }
 .detail-panel { min-width: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #d8dfd3 transparent; border: 1px solid #e0e6dc; border-radius: 10px; background: white; }
@@ -223,8 +221,8 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
 .task-symbol.active { border-color: #638651; border-right-color: #d5e2cc; border-bottom-color: #d5e2cc; border-width: 2px; transform: rotate(-20deg); }
 .task-symbol.waiting, .task-symbol.blocked { color: #b38451; border-color: #d6bb94; }
 .task-name { font-size: 11px; line-height: 1.55; color: #6c7b61; flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.task-row[data-status=&quot;active&quot;] .task-name { color: #3f6130; font-weight: 550; }
-.task-row[data-status=&quot;done&quot;] .task-name { color: #8f9e82; }
+.task-row[data-status="active"] .task-name { color: #3f6130; font-weight: 550; }
+.task-row[data-status="done"] .task-name { color: #8f9e82; }
 .task-hint { display: block; color: #9aa88d; font-size: 9px; margin-top: 3px; font-weight: 400; }
 .task-code { font: 8px var(--mono); color: #a5b198; flex: 0 0 auto; }
 .task-row > .task-chevron { width: 11px; height: 11px; color: #a5b396; }
@@ -294,7 +292,7 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
 .scope-note { font-size: 11px; }
 .section-heading h3 { font-size: 13px; }
 .task-name { font-size: 12px; color: #5f7064; }
-.task-row[data-status=&quot;done&quot;] .task-name { color: #6d7b70; }
+.task-row[data-status="done"] .task-name { color: #6d7b70; }
 .task-hint { font-size: 10px; }
 .wave-title small { font-size: 10px; }
 .activity-list li strong { font-size: 11px; color: #637267; }
@@ -350,11 +348,11 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   .row-count, .row-percent { font-size: 10px; }
   .list-footer { font-size: 9px; padding: 17px 2px 0; }
   .detail-panel { display: none; border: 0; border-radius: 0; overflow: visible; background: var(--canvas); }
-  body:not([data-view=&quot;home&quot;]) .project-panel { display: none; }
-  body:not([data-view=&quot;home&quot;]) .detail-panel { display: block; }
-  body:not([data-view=&quot;home&quot;]) .page-header { padding-top: 16px; padding-bottom: 0; height: 57px; align-items: flex-start; }
-  body:not([data-view=&quot;home&quot;]) .page-heading h1, body:not([data-view=&quot;home&quot;]) .page-subtitle { display: none; }
-  body:not([data-view=&quot;home&quot;]) .page-heading > .eyebrow { margin-top: 9px; }
+  body:not([data-view="home"]) .project-panel { display: none; }
+  body:not([data-view="home"]) .detail-panel { display: block; }
+  body:not([data-view="home"]) .page-header { padding-top: 16px; padding-bottom: 0; height: 57px; align-items: flex-start; }
+  body:not([data-view="home"]) .page-heading h1, body:not([data-view="home"]) .page-subtitle { display: none; }
+  body:not([data-view="home"]) .page-heading > .eyebrow { margin-top: 9px; }
   .detail-nav { padding: 0; height: 48px; border-color: #e0e8d8; margin-bottom: 20px; }
   .desktop-detail-label { display: none; }
   .mobile-back { display: inline-flex; }
@@ -405,7 +403,7 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   .offline-tag { display: none; }
   .offline-banner strong { font-size: 11px; }
   .offline-banner div > span { font-size: 10px; }
-  body:not([data-view=&quot;home&quot;]) .offline-banner { margin-top: 5px; }
+  body:not([data-view="home"]) .offline-banner { margin-top: 5px; }
   .rules-dialog { padding: 22px; }
   .rules-dialog h2 { font-size: 22px; }
   .formula { padding: 20px 13px; }
@@ -415,62 +413,58 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
 </style>
 </head>
-<body data-view=&quot;home&quot;>
-  <a class=&quot;skip-link&quot; href=&quot;#main-content&quot; data-action=&quot;skip&quot;>跳到主要内容</a>
-  <div class=&quot;app-shell&quot;>
-    <aside class=&quot;sidebar&quot; aria-label=&quot;工作台导航&quot;>
-      <a class=&quot;brand&quot; href=&quot;#&quot; aria-label=&quot;进度簿首页&quot;><span class=&quot;brand-mark&quot; aria-hidden=&quot;true&quot;><i></i><i></i><i></i></span><span>进度簿<small>个人工作台</small></span></a>
-      <nav class=&quot;primary-nav&quot; aria-label=&quot;查看范围&quot; id=&quot;primary-nav&quot;></nav>
-      <div class=&quot;side-section-label&quot;>项目<span id=&quot;side-project-count&quot;>06</span></div>
-      <nav class=&quot;side-projects&quot; aria-label=&quot;项目快捷入口&quot; id=&quot;side-projects&quot;></nav>
-      <div class=&quot;sidebar-bottom&quot;>
-        <div class=&quot;source-machine&quot;><span data-icon=&quot;monitor&quot;></span><div>Windows 本机<small>个人工作空间</small></div><span class=&quot;source-dot&quot; aria-hidden=&quot;true&quot;></span></div>
-        <div class=&quot;sidebar-foot&quot;><span data-icon=&quot;eye&quot;></span>只读查看<span class=&quot;foot-version&quot;>DEMO / 01</span></div>
+<body data-view="home">
+  <a class="skip-link" href="#main-content" data-action="skip">跳到主要内容</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="工作台导航">
+      <a class="brand" href="#" aria-label="进度簿首页"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>进度簿<small>个人工作台</small></span></a>
+      <nav class="primary-nav" aria-label="查看范围" id="primary-nav"></nav>
+      <div class="side-section-label">项目<span id="side-project-count">0</span></div>
+      <nav class="side-projects" aria-label="项目快捷入口" id="side-projects"></nav>
+      <div class="sidebar-bottom">
+        <div class="source-machine"><span data-icon="monitor"></span><div>Windows 本机<small>个人工作空间</small></div><span class="source-dot" aria-hidden="true"></span></div>
+        <div class="sidebar-foot"><span data-icon="eye"></span>只读查看</div>
       </div>
     </aside>
-    <main class=&quot;main&quot; id=&quot;main-content&quot; tabindex=&quot;-1&quot;>
-      <header class=&quot;page-header&quot;>
-        <div class=&quot;page-heading&quot;>
-          <div class=&quot;eyebrow&quot;><span class=&quot;mini-brand&quot; aria-hidden=&quot;true&quot;><i></i><i></i><i></i></span><span class=&quot;desktop-kicker&quot;>工作空间</span><span class=&quot;mobile-kicker&quot;>进度簿</span><span class=&quot;kicker-slash&quot;>/</span>项目</div>
-          <h1>项目总览<span class=&quot;heading-count&quot; id=&quot;heading-count&quot;>6</span></h1>
-          <p class=&quot;page-subtitle&quot;><span id=&quot;date-label&quot;></span><span class=&quot;sub-dot&quot;>·</span><span id=&quot;overview-summary&quot;></span></p>
+    <main class="main" id="main-content" tabindex="-1">
+      <header class="page-header">
+        <div class="page-heading">
+          <div class="eyebrow"><span class="mini-brand" aria-hidden="true"><i></i><i></i><i></i></span><span class="desktop-kicker">工作空间</span><span class="mobile-kicker">进度簿</span><span class="kicker-slash">/</span>项目</div>
+          <h1>项目总览<span class="heading-count" id="heading-count">0</span></h1>
+          <p class="page-subtitle"><span id="date-label"></span><span class="sub-dot">·</span><span id="overview-summary"></span></p>
         </div>
-        <div class=&quot;header-actions&quot;>
-          <details class=&quot;demo-menu&quot; id=&quot;demo-menu&quot;>
-            <summary><span class=&quot;demo-mark&quot; aria-hidden=&quot;true&quot;></span><span>演示数据</span><span data-icon=&quot;chevronDown&quot;></span></summary>
-            <div class=&quot;demo-options&quot;><p>预览场景</p><button type=&quot;button&quot; data-scenario=&quot;online&quot;><span data-icon=&quot;sun&quot;></span>正常显示<span class=&quot;option-check&quot; data-check=&quot;online&quot;>✓</span></button><button type=&quot;button&quot; data-scenario=&quot;offline&quot;><span data-icon=&quot;wifiOff&quot;></span>本机离线<span class=&quot;option-check&quot; data-check=&quot;offline&quot;></span></button><small>此处仅切换演示场景，<br>不会更新任何项目状态。</small></div>
-          </details>
-          <button class=&quot;icon-button rules-button&quot; type=&quot;button&quot; data-action=&quot;rules&quot; aria-label=&quot;查看进度计算方式&quot; title=&quot;进度计算方式&quot;><span data-icon=&quot;help&quot;></span></button>
+        <div class="header-actions">
+          <button class="icon-button rules-button" type="button" data-action="rules" aria-label="查看进度计算方式" title="进度计算方式"><span data-icon="help"></span></button>
         </div>
       </header>
-      <div class=&quot;offline-banner&quot; id=&quot;offline-banner&quot; hidden role=&quot;status&quot;><span data-icon=&quot;wifiOff&quot;></span><div><strong>暂时无法连接本机</strong><span>以下保留最后一次记录 · 今天 14:38。请确认电脑在线后再查看。</span></div><span class=&quot;offline-tag&quot;>离线示例</span></div>
-      <div class=&quot;workspace&quot;>
-        <section class=&quot;project-panel&quot; aria-label=&quot;项目列表&quot;>
-          <div class=&quot;search-wrap&quot;><span data-icon=&quot;search&quot;></span><input id=&quot;project-search&quot; type=&quot;search&quot; placeholder=&quot;搜索项目或任务&quot; aria-label=&quot;搜索项目或任务&quot; autocomplete=&quot;off&quot;><kbd aria-hidden=&quot;true&quot;>Ctrl K</kbd></div>
-          <div class=&quot;filters&quot; id=&quot;filters&quot; role=&quot;group&quot; aria-label=&quot;筛选项目&quot;></div>
-          <div class=&quot;list-caption&quot;><span id=&quot;list-caption&quot;></span><span>已规划范围</span></div>
-          <div class=&quot;project-scroll&quot; id=&quot;project-scroll&quot;><div id=&quot;project-list&quot; class=&quot;project-list&quot; role=&quot;list&quot;></div></div>
-          <div class=&quot;list-footer&quot;><span class=&quot;snapshot-dot&quot; aria-hidden=&quot;true&quot;></span><span id=&quot;snapshot-label&quot;>示例快照 · 今天 14:38</span><span class=&quot;read-only-label&quot;><span data-icon=&quot;eye&quot;></span>只读</span></div>
+      <div class="offline-banner" id="offline-banner" hidden role="status"><span data-icon="wifiOff"></span><div><strong>暂时无法读取进度</strong><span>无法读取当前数据，连接恢复后会自动重试。</span></div><span class="offline-tag">离线</span></div>
+      <div class="workspace">
+        <section class="project-panel" aria-label="项目列表">
+          <div class="search-wrap"><span data-icon="search"></span><input id="project-search" type="search" placeholder="搜索项目或任务" aria-label="搜索项目或任务" autocomplete="off"><kbd aria-hidden="true">Ctrl K</kbd></div>
+          <div class="filters" id="filters" role="group" aria-label="筛选项目"></div>
+          <div class="list-caption"><span id="list-caption"></span><span>已规划范围</span></div>
+          <div class="project-scroll" id="project-scroll"><div id="project-list" class="project-list" role="list"></div></div>
+          <div class="list-footer"><span class="snapshot-dot" aria-hidden="true"></span><span id="snapshot-label">正在读取项目…</span><span class="read-only-label"><span data-icon="eye"></span>只读</span></div>
         </section>
-        <aside class=&quot;detail-panel&quot; id=&quot;detail-panel&quot; aria-label=&quot;项目详情&quot; tabindex=&quot;-1&quot;></aside>
+        <aside class="detail-panel" id="detail-panel" aria-label="项目详情" tabindex="-1"></aside>
       </div>
     </main>
   </div>
-  <dialog class=&quot;rules-dialog&quot; id=&quot;rules-dialog&quot; aria-labelledby=&quot;rules-title&quot;>
-    <div class=&quot;dialog-top&quot;><span class=&quot;eyebrow&quot;>计量口径</span><button class=&quot;icon-button&quot; type=&quot;button&quot; data-action=&quot;close-rules&quot; aria-label=&quot;关闭计算说明&quot;><span data-icon=&quot;close&quot;></span></button></div>
-    <h2 id=&quot;rules-title&quot;>每个 Task，算一步。</h2>
-    <p class=&quot;dialog-intro&quot;>百分比表示已规划任务的实施完成比例。</p>
-    <div class=&quot;formula&quot;><span><strong>12</strong><small>已完成 Task</small></span><b>÷</b><span><strong>20</strong><small>已规划 Task</small></span><b>=</b><span class=&quot;formula-result&quot;><strong>60<em>%</em></strong><small>范围内进度</small></span></div>
-    <ul class=&quot;rules-list&quot;><li><strong>通过检查才计入完成</strong><span>人工验收独立标记，待验收不抵消已完成的实施工作。</span></li><li><strong>子项不增加 Task 数量</strong><span>Wave 用于分组，子项用于展示细节；项目比例直接汇总 Task。</span></li><li><strong>未拆分的计划明确标注</strong><span>未来 Wave 待细化时，不将已有任务的 100% 当成全项目完成。</span></li></ul>
-    <div class=&quot;dialog-foot&quot;>本页为虚构演示数据，不代表本机实时状态。</div>
+  <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-top"><span class="eyebrow">计量口径</span><button class="icon-button" type="button" data-action="close-rules" aria-label="关闭计算说明"><span data-icon="close"></span></button></div>
+    <h2 id="rules-title">每个 Task，算一步。</h2>
+    <p class="dialog-intro">百分比表示已规划任务的实施完成比例。</p>
+    <div class="formula"><span><strong>12</strong><small>已完成 Task</small></span><b>÷</b><span><strong>20</strong><small>已规划 Task</small></span><b>=</b><span class="formula-result"><strong>60<em>%</em></strong><small>范围内进度</small></span></div>
+    <ul class="rules-list"><li><strong>通过检查才计入完成</strong><span>人工验收独立标记，待验收不抵消已完成的实施工作。</span></li><li><strong>子项不增加 Task 数量</strong><span>Wave 用于分组，子项用于展示细节；项目比例直接汇总 Task。</span></li><li><strong>未拆分的计划明确标注</strong><span>未来 Wave 待细化时，不将已有任务的 100% 当成全项目完成。</span></li></ul>
+    <div class="dialog-foot">数据由项目主动上报；最后上报时间与页面刷新时间分别计算。</div>
   </dialog>
-  <noscript><style>.app-shell{display:none}.static-preview{max-width:680px;margin:auto;padding:24px 20px}.static-preview h1{font-size:27px;font-weight:600;margin:12px 0}.static-preview>p{font-size:12px;line-height:1.9;color:#69756f;margin-bottom:24px}.static-preview .project-list{gap:12px}</style><main class=&quot;static-preview&quot;><div class=&quot;eyebrow&quot;>进度簿 · 演示数据</div><h1>项目总览</h1><p>当前显示静态概览。在支持页面交互的浏览器中打开，可进一步查看 Wave 和 Task 详情。</p><div class=&quot;project-list&quot;><div class=&quot;project-row&quot; data-status=&quot;active&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon sage&quot;>知</span><div class=&quot;row-identity&quot;><strong>本地知识库</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag active&quot;>进行中</span></div><p class=&quot;row-summary&quot;>正在处理检索结果去重，引用来源已接通。</p><div class=&quot;row-bottom&quot;><progress value=&quot;12&quot; max=&quot;20&quot;></progress><span class=&quot;row-count&quot;>12 / 20</span><span class=&quot;row-percent&quot;>60%</span><span class=&quot;row-updated&quot;>2 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;blocked&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon sand&quot;>账</span><div class=&quot;row-identity&quot;><strong>账单归档</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag blocked&quot;>已阻塞</span></div><p class=&quot;row-summary&quot;>导入流程已完成，等待确认退款的归属月份。</p><div class=&quot;row-bottom&quot;><progress value=&quot;6&quot; max=&quot;10&quot;></progress><span class=&quot;row-count&quot;>6 / 10</span><span class=&quot;row-percent&quot;>60%</span><span class=&quot;row-updated&quot;>18 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;review&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon plum&quot;>相</span><div class=&quot;row-identity&quot;><strong>家庭相册整理</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag review&quot;>待验收</span></div><p class=&quot;row-summary&quot;>已完成全部检查，等待查看分组与预览效果。</p><div class=&quot;row-bottom&quot;><progress value=&quot;8&quot; max=&quot;8&quot;></progress><span class=&quot;row-count&quot;>8 / 8</span><span class=&quot;row-percent&quot;>100%</span><span class=&quot;row-updated&quot;>42 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;active&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon blue&quot;>阅</span><div class=&quot;row-identity&quot;><strong>阅读清单</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag active&quot;>进行中</span></div><p class=&quot;row-summary&quot;>收藏入口可用，正在整理列表的筛选体验。</p><div class=&quot;row-bottom&quot;><progress value=&quot;3&quot; max=&quot;9&quot;></progress><span class=&quot;row-count&quot;>3 / 9</span><span class=&quot;row-percent&quot;>33%</span><span class=&quot;row-updated&quot;>1 小时前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;complete&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon stone&quot;>小</span><div class=&quot;row-identity&quot;><strong>日常小工具</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag complete&quot;>已完成</span></div><p class=&quot;row-summary&quot;>全部任务完成，交付检查已通过。</p><div class=&quot;row-bottom&quot;><progress value=&quot;9&quot; max=&quot;9&quot;></progress><span class=&quot;row-count&quot;>9 / 9</span><span class=&quot;row-percent&quot;>100%</span><span class=&quot;row-updated&quot;>昨天</span></div></div><div class=&quot;project-row&quot; data-status=&quot;planning&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon stone&quot;>站</span><div class=&quot;row-identity&quot;><strong>个人站点可用性与证书到期检查</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag planning&quot;>规划中</span></div><p class=&quot;row-summary&quot;>已明确检查范围，任务尚待拆分。</p><div class=&quot;row-bottom&quot;><span class=&quot;unplanned-track&quot;></span><span class=&quot;row-count&quot;>尚未登记任务</span><span class=&quot;row-updated&quot;>昨天</span></div></div></div></main></noscript>
+  <noscript><main class="static-preview">请启用 JavaScript 查看实时项目进度。</main></noscript>
   <script>(function (root) {
   'use strict';
   function summarize(project) {
     const waves = project.waves || [];
     const tasks = waves.flatMap(wave => wave.tasks || []).filter(task => task.status !== 'cancelled');
-    const completed = tasks.filter(task => task.status === 'done' &amp;&amp; task.verified === true);
+    const completed = tasks.filter(task => task.status === 'done' && task.verified === true);
     return {
       done: completed.length,
       total: tasks.length,
@@ -506,133 +500,70 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   }
   const api = Object.freeze({ summarize, matches, adaptResponse });
   root.ProgressModel = api;
-  if (typeof module !== 'undefined' &amp;&amp; module.exports) module.exports = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(globalThis);
 </script>
+  <script>const DashboardConfig = { mode: 'live', projects: [] };</script>
   <script>(function (root) {
   'use strict';
-  function wave(id, name, titles, doneCount, options = {}) {
-    return {
-      id, name, defined: true, acceptance: 'not_required',
-      tasks: titles.map((title, index) => ({
-        id: `${id}-t${index + 1}`, code: `T${Number(id.slice(1))}.${index + 1}`, title,
-        status: index < doneCount ? 'done' : 'todo', verified: index < doneCount,
-        acceptance: 'not_required',
-        goal: `完成${title}，并检查正常输入和异常输入下的表现。`,
-        summary: index < doneCount ? '实现与约定检查已完成，结果已记录。' : '尚未开始，按阶段计划推进。',
-        updated: index < doneCount ? '今天 11:20' : '今天 09:10',
-        evidence: index < doneCount ? [{ label: '检查结果', text: '约定的功能检查通过' }, { label: '记录位置', text: `docs/tasks/${id}-${index + 1}.md` }] : [],
-        children: [],
-      })),
-      ...options,
-    };
+  function createLiveFeed({ url = '/api/v1/projects', visibility = document, intervalMs = 15000, timeoutMs = 8000, onState }) {
+    let projects = [];
+    let timer = null;
+    let controller = null;
+    let pending = false;
+    let running = false;
+    let stopped = true;
+
+    function schedule() {
+      clearTimeout(timer);
+      if (!stopped && !visibility.hidden) timer = setTimeout(refresh, intervalMs);
+    }
+    async function refresh() {
+      if (stopped || visibility.hidden) return;
+      if (running) { pending = true; return; }
+      clearTimeout(timer);
+      running = true;
+      controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store', credentials: 'same-origin' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        projects = ProgressModel.adaptResponse(await response.json());
+        if (!stopped) onState({ status: 'online', projects });
+      } catch (error) {
+        if (!stopped) onState({ status: 'offline', projects, error });
+      } finally {
+        clearTimeout(timeout);
+        controller = null;
+        running = false;
+        if (pending && !visibility.hidden) { pending = false; refresh(); }
+        else schedule();
+      }
+    }
+    function onVisibility() {
+      if (visibility.hidden) { clearTimeout(timer); pending = false; }
+      else refresh();
+    }
+    function start() {
+      if (!stopped) return;
+      stopped = false;
+      visibility.addEventListener('visibilitychange', onVisibility);
+      refresh();
+    }
+    function stop() {
+      stopped = true;
+      pending = false;
+      clearTimeout(timer);
+      controller?.abort();
+      visibility.removeEventListener('visibilitychange', onVisibility);
+    }
+    const api = { start, stop, refresh };
+    return api;
   }
-  const knowledge = {
-    id: 'knowledge', name: '本地知识库', shortName: '知识库', glyph: 'book', color: 'sage',
-    description: '把散落的笔记和资料放在一起，检索时保留原文出处。',
-    summary: '正在处理检索结果去重，引用来源已接通。', status: 'active',
-    updated: '2 分钟前', updatedAt: '今天 14:36', currentWave: 'w2', category: '个人工具',
-    waves: [
-      wave('w1', '资料接入', ['定义文档目录结构', '导入 Markdown 笔记', '解析 PDF 正文', '提取文档元数据', '文件变更检测', '重复文件识别', '增量导入记录', '接入流程验证'], 8),
-      wave('w2', '检索与引用', ['建立全文索引', '中文分词与召回', '连接原文引用', '检索结果排序', '合并重复检索片段', '高亮命中段落', '分页与空结果处理', '检索体验回归'], 4),
-      wave('w3', '阅读体验', ['资料阅读页', '标签与目录导航', '手机阅读布局', '阅读状态回归'], 0),
-      { id: 'w4', name: '多端验证', defined: false, tasks: [] },
-      { id: 'w5', name: '交付与整理', defined: false, tasks: [] },
-    ],
-    updates: [
-      { time: '14:36', tone: 'active', text: '开始合并重复检索片段', detail: 'Wave 02 · T2.5' },
-      { time: '14:08', tone: 'done', text: '检索结果排序检查通过', detail: '已规划任务 11 → 12 / 20' },
-      { time: '11:20', tone: 'done', text: '原文引用已连接到检索结果', detail: 'Wave 02 · T2.3' },
-    ],
-  };
-  Object.assign(knowledge.waves[1].tasks[4], {
-    status: 'active', goal: '同一段内容被多个来源命中时，只保留一份清晰结果，同时保留所有原文引用。',
-    summary: '文档标识归一化已完成，正在处理相邻片段的重叠区间。', updated: '今天 14:36',
-    children: [
-      { title: '归一化文档标识', status: 'done' },
-      { title: '合并相邻片段的重叠区间', status: 'active' },
-      { title: '验证跨来源引用仍可追溯', status: 'todo' },
-    ],
-    evidence: [{ label: '当前记录', text: 'docs/tasks/retrieval-dedup.md' }, { label: '验证要求', text: '无重复结果；来源引用完整；空结果可正常返回' }],
-  });
-
-  const billing = {
-    id: 'billing', name: '账单归档', shortName: '账单归档', glyph: 'receipt', color: 'sand',
-    description: '把不同来源的账单整理成统一、可核对的月度记录。',
-    summary: '导入流程已完成，等待确认退款的归属月份。', status: 'blocked',
-    updated: '18 分钟前', updatedAt: '今天 14:20', currentWave: 'w2', category: '生活管理',
-    blocker: '退款按原消费月份归档，还是按实际退款月份归档？',
-    waves: [
-      wave('w1', '数据导入', ['识别账单格式', '清洗日期与金额', '建立统一记录', '检查重复账单'], 4),
-      wave('w2', '分类与核对', ['设置分类规则', '核对总金额', '确认退款归属规则', '生成月度汇总', '补充导入异常提示', '整体验证'], 2),
-    ],
-    updates: [
-      { time: '14:20', tone: 'blocked', text: '退款归属规则需要确认', detail: '当前进度保留在 6 / 10' },
-      { time: '13:42', tone: 'done', text: '月度总金额核对通过', detail: 'Wave 02 · T2.2' },
-    ],
-  };
-  Object.assign(billing.waves[1].tasks[2], {
-    status: 'waiting', summary: '同一笔跨月退款会影响两个月的汇总，需要先确定记账口径。',
-    goal: '统一退款记录的月份归属，避免统计规则前后不一致。',
-    blocker: billing.blocker, updated: '今天 14:20',
-    evidence: [{ label: '两种口径', text: '原消费月：便于追溯消费；实际退款月：贴近资金变化。' }],
-  });
-
-  const photos = {
-    id: 'photos', name: '家庭相册整理', shortName: '相册整理', glyph: 'image', color: 'plum',
-    description: '按拍摄日期整理家庭照片，保留原图并生成轻量预览。',
-    summary: '已完成全部检查，等待查看分组与预览效果。', status: 'review',
-    updated: '42 分钟前', updatedAt: '今天 13:56', currentWave: 'w2', category: '生活管理',
-    waves: [
-      wave('w1', '归档规则', ['读取拍摄日期', '识别重复照片', '建立年月目录', '保留原始文件'], 4),
-      wave('w2', '预览与验证', ['生成照片缩略图', '提供相册预览', '检查日期缺失情况', '验证归档结果'], 4, { acceptance: 'pending' }),
-    ],
-    updates: [{ time: '13:56', tone: 'review', text: '实施完成，等待阶段验收', detail: '8 / 8 Task · Wave 02 待验收' }],
-  };
-  Object.assign(photos.waves[1].tasks[3], { summary: '抽查原图、日期分组与缩略图，约定检查均已通过。', evidence: [
-    { label: '验证结果', text: '原图数量一致；重复项可追溯；缺失日期的照片单独归档。' },
-    { label: '阶段验收', text: '待查看相册预览效果。实施进度已计入完成。' },
-  ] });
-
-  const reading = {
-    id: 'reading', name: '阅读清单', shortName: '阅读清单', glyph: 'bookmark', color: 'blue',
-    description: '统一收藏稍后阅读的文章，保留来源与阅读状态。',
-    summary: '收藏入口可用，正在整理列表的筛选体验。', status: 'active',
-    updated: '1 小时前', updatedAt: '今天 13:12', currentWave: 'w2', category: '个人工具',
-    waves: [
-      wave('w1', '收藏入口', ['保存文章链接', '提取标题与来源', '识别重复收藏'], 3),
-      wave('w2', '列表与阅读', ['筛选未读文章', '按来源浏览', '搜索收藏内容', '文章详情页', '手机适配', '阅读流程验证'], 0),
-    ],
-    updates: [{ time: '13:12', tone: 'active', text: '开始实现未读筛选', detail: 'Wave 02 · T2.1' }],
-  };
-  Object.assign(reading.waves[1].tasks[0], { status: 'active', summary: '筛选条件已接通，正在检查空列表和切换后的滚动位置。' });
-
-  const toolbox = {
-    id: 'toolbox', name: '日常小工具', shortName: '小工具', glyph: 'grid', color: 'stone',
-    description: '把常用的文本处理与格式转换工具放在一个页面。',
-    summary: '全部任务完成，交付检查已通过。', status: 'complete',
-    updated: '昨天', updatedAt: '昨天 18:05', currentWave: 'w3', category: '个人工具',
-    waves: [
-      wave('w1', '基础页面', ['工具入口', '通用输入区域', '结果展示'], 3),
-      wave('w2', '常用工具', ['文本去重', '格式转换', '时间戳换算'], 3),
-      wave('w3', '交付检查', ['手机布局', '键盘操作', '完整回归'], 3, { acceptance: 'accepted' }),
-    ],
-    updates: [{ time: '昨天', tone: 'done', text: '交付检查已通过', detail: '9 / 9 Task · 已验收' }],
-  };
-  const monitor = {
-    id: 'monitor', name: '个人站点可用性与证书到期检查', shortName: '站点检查', glyph: 'globe', color: 'stone',
-    description: '定期检查个人站点是否可访问，以及证书是否即将到期。',
-    summary: '已明确检查范围，任务尚待拆分。', status: 'planning',
-    updated: '昨天', updatedAt: '昨天 16:30', currentWave: 'w1', category: '基础设施',
-    waves: [{ id: 'w1', name: '站点与规则', defined: false, tasks: [] }, { id: 'w2', name: '检查与展示', defined: false, tasks: [] }],
-    updates: [{ time: '昨天', tone: 'todo', text: '记录站点检查范围', detail: '2 个 Wave 待细化' }],
-  };
-  const data = { dateLabel: '9 月 28 日，周一', snapshotLabel: '今天 14:38', projects: [knowledge, billing, photos, reading, toolbox, monitor] };
-  root.DemoData = data;
-  if (typeof module !== 'undefined' &amp;&amp; module.exports) module.exports = data;
+  root.LiveFeed = { createLiveFeed };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { createLiveFeed };
 })(globalThis);
-</script>
-  <script>const DashboardConfig = { mode: 'demo', projects: DemoData.projects, dateLabel: DemoData.dateLabel };
+
 (function () {
   'use strict';
   const live = DashboardConfig.mode === 'live';
@@ -640,7 +571,7 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   const dateLabel = live ? new Date().toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'long' }) : DashboardConfig.dateLabel;
   const { summarize, matches } = ProgressModel;
   const $ = selector => document.querySelector(selector);
-  const esc = value => String(value ?? '').replace(/[&amp;<>&quot;']/g, character => ({ '&amp;': '&amp;amp;', '<': '&amp;lt;', '>': '&amp;gt;', '&quot;': '&amp;quot;', &quot;'&quot;: '&amp;#39;' }[character]));
+  const esc = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
   const localTime = value => {
     if (!value || Number.isNaN(Date.parse(value))) return '时间未知';
     const at = new Date(value);
@@ -649,36 +580,36 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   const reported = project => live ? localTime(project.receivedAt) : project.updated;
   let connection = 'loading';
   const shapes = {
-    grid: '<rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/>',
-    book: '<path d=&quot;M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4z&quot;/><path d=&quot;M13 7a3 3 0 0 1 3-3h4v15h-4a4 4 0 0 0-3 2&quot;/><path d=&quot;M7 8h3M7 11h3&quot;/>',
-    receipt: '<path d=&quot;M5 3l3 2 4-2 4 2 3-2v18l-3-2-4 2-4-2-3 2z&quot;/><path d=&quot;M9 9h6M9 13h6&quot;/>',
-    image: '<rect x=&quot;3&quot; y=&quot;4&quot; width=&quot;18&quot; height=&quot;16&quot; rx=&quot;3&quot;/><circle cx=&quot;8&quot; cy=&quot;9&quot; r=&quot;1.5&quot;/><path d=&quot;m21 16-5-5-7 8M3 16l4-4 4 3&quot;/>',
-    bookmark: '<path d=&quot;M6 3h12v18l-6-4-6 4z&quot;/><path d=&quot;M9 7h6M9 10h4&quot;/>',
-    globe: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18z&quot;/>',
-    monitor: '<rect x=&quot;3&quot; y=&quot;4&quot; width=&quot;18&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M8 21h8M12 17v4&quot;/>',
-    eye: '<path d=&quot;M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z&quot;/><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;3&quot;/>',
-    search: '<circle cx=&quot;10.5&quot; cy=&quot;10.5&quot; r=&quot;6.5&quot;/><path d=&quot;m16 16 5 5&quot;/>',
-    help: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M9.3 8.7a2.8 2.8 0 0 1 5.4.9c0 2-2.7 2-2.7 4M12 17h.01&quot;/>',
-    chevronDown: '<path d=&quot;m6 9 6 6 6-6&quot;/>',
-    chevronRight: '<path d=&quot;m9 5 7 7-7 7&quot;/>',
-    arrowLeft: '<path d=&quot;m10 5-7 7 7 7M3 12h18&quot;/>',
-    arrowUpRight: '<path d=&quot;M6 18 18 6M6 6h12v12&quot;/>',
-    arrowRight: '<path d=&quot;M4 12h16m-6-6 6 6-6 6&quot;/>',
-    close: '<path d=&quot;m6 6 12 12M6 18 18 6&quot;/>',
-    check: '<path d=&quot;m5 12 4 4L19 6&quot;/>',
-    attention: '<path d=&quot;M12 3 2.5 20h19z&quot;/><path d=&quot;M12 9v4M12 16h.01&quot;/>',
-    checkCircle: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;m7 12 3 3 7-7&quot;/>',
-    clock: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M12 7v5l3 2&quot;/>',
-    sun: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;4&quot;/><path d=&quot;M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5&quot;/>',
-    wifiOff: '<path d=&quot;m3 3 18 18M8.5 8.5A13 13 0 0 0 2 12m20 0a13 13 0 0 0-10-4M5 16a9 9 0 0 1 7-3m6.5 3a9 9 0 0 0-2-1.5M8 19a5 5 0 0 1 7-1M12 21h.01&quot;/>',
-    layers: '<path d=&quot;m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5&quot;/>',
-    empty: '<path d=&quot;M5 5h14l3 11v4H2v-4z&quot;/><path d=&quot;M2 16h6l2 3h4l2-3h6M9 9h6&quot;/>',
-    pause: '<path d=&quot;M9 7v10M15 7v10&quot;/>',
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    book: '<path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4z"/><path d="M13 7a3 3 0 0 1 3-3h4v15h-4a4 4 0 0 0-3 2"/><path d="M7 8h3M7 11h3"/>',
+    receipt: '<path d="M5 3l3 2 4-2 4 2 3-2v18l-3-2-4 2-4-2-3 2z"/><path d="M9 9h6M9 13h6"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8" cy="9" r="1.5"/><path d="m21 16-5-5-7 8M3 16l4-4 4 3"/>',
+    bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/><path d="M9 7h6M9 10h4"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18z"/>',
+    monitor: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+    search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.3 8.7a2.8 2.8 0 0 1 5.4.9c0 2-2.7 2-2.7 4M12 17h.01"/>',
+    chevronDown: '<path d="m6 9 6 6 6-6"/>',
+    chevronRight: '<path d="m9 5 7 7-7 7"/>',
+    arrowLeft: '<path d="m10 5-7 7 7 7M3 12h18"/>',
+    arrowUpRight: '<path d="M6 18 18 6M6 6h12v12"/>',
+    arrowRight: '<path d="M4 12h16m-6-6 6 6-6 6"/>',
+    close: '<path d="m6 6 12 12M6 18 18 6"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    attention: '<path d="M12 3 2.5 20h19z"/><path d="M12 9v4M12 16h.01"/>',
+    checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5"/>',
+    wifiOff: '<path d="m3 3 18 18M8.5 8.5A13 13 0 0 0 2 12m20 0a13 13 0 0 0-10-4M5 16a9 9 0 0 1 7-3m6.5 3a9 9 0 0 0-2-1.5M8 19a5 5 0 0 1 7-1M12 21h.01"/>',
+    layers: '<path d="m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5"/>',
+    empty: '<path d="M5 5h14l3 11v4H2v-4z"/><path d="M2 16h6l2 3h4l2-3h6M9 9h6"/>',
+    pause: '<path d="M9 7v10M15 7v10"/>',
   };
-  const icon = (name, cls = '') => `<svg class=&quot;${cls}&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; aria-hidden=&quot;true&quot;>${shapes[name] || shapes.grid}</svg>`;
+  const icon = (name, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${shapes[name] || shapes.grid}</svg>`;
   function fillIcons(container = document) { container.querySelectorAll('[data-icon]').forEach(node => { node.innerHTML = icon(node.dataset.icon); }); }
   const statusLabels = { active: '进行中', blocked: '已阻塞', review: '待验收', complete: '已完成', planning: '规划中', done: '已完成', todo: '未开始', waiting: '待确认', failed: '失败', cancelled: '已取消' };
-  const statusTag = status => `<span class=&quot;status-tag ${esc(status)}&quot;>${esc(statusLabels[status] || status)}</span>`;
+  const statusTag = status => `<span class="status-tag ${esc(status)}">${esc(statusLabels[status] || status)}</span>`;
   const attention = project => ['blocked', 'review'].includes(project.status) || summarize(project).pendingAcceptance > 0;
   const filters = [
     { id: 'all', name: '全部', nav: '项目总览', icon: 'grid', match: () => true },
@@ -688,22 +619,22 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   ];
   const state = { filter: 'all', query: '', projectId: projects[0]?.id || null, view: 'home', taskId: null, scenario: 'online', homeScroll: 0, openWaves: new Map() };
   projects.forEach(project => state.openWaves.set(project.id, new Set([project.currentWave])));
-  const visibleProjects = () => projects.filter(project => filters.find(f => f.id === state.filter).match(project) &amp;&amp; matches(project, state.query))
+  const visibleProjects = () => projects.filter(project => filters.find(f => f.id === state.filter).match(project) && matches(project, state.query))
     .sort((a, b) => Number(attention(b)) - Number(attention(a)));
   const activeProject = () => projects.find(p => p.id === state.projectId) || projects[0] || null;
   const projectLink = project => `#project/${encodeURIComponent(project.id)}`;
   const taskLink = (project, task) => `${projectLink(project)}/task/${encodeURIComponent(task.id)}`;
-  const symbol = status => `<span class=&quot;task-symbol ${esc(status)}&quot; aria-hidden=&quot;true&quot;>${status === 'done' ? icon('check') : ['blocked', 'waiting', 'failed'].includes(status) ? icon('pause') : ''}</span>`;
+  const symbol = status => `<span class="task-symbol ${esc(status)}" aria-hidden="true">${status === 'done' ? icon('check') : ['blocked', 'waiting', 'failed'].includes(status) ? icon('pause') : ''}</span>`;
   const progress = (summary, label, className = '', status = '') => summary.total
-    ? `<progress class=&quot;${esc(className)} ${esc(status)}&quot; value=&quot;${summary.done}&quot; max=&quot;${summary.total}&quot; aria-label=&quot;${esc(label)}：${summary.done}/${summary.total} Task 已完成&quot;></progress>`
-    : '<span class=&quot;unplanned-track&quot; aria-label=&quot;尚未登记任务&quot;></span>';
+    ? `<progress class="${esc(className)} ${esc(status)}" value="${summary.done}" max="${summary.total}" aria-label="${esc(label)}：${summary.done}/${summary.total} Task 已完成"></progress>`
+    : '<span class="unplanned-track" aria-label="尚未登记任务"></span>';
 
   function renderNavigation() {
     $('#side-project-count').textContent = projects.length;
     $('#heading-count').textContent = projects.length;
-    $('#primary-nav').innerHTML = filters.filter(f => f.id !== 'active').map(f => `<button type=&quot;button&quot; class=&quot;nav-button ${state.filter === f.id ? 'active' : ''}&quot; data-filter=&quot;${f.id}&quot; aria-pressed=&quot;${state.filter === f.id}&quot;>${icon(f.icon)}<span>${f.nav}</span><span class=&quot;nav-count&quot;>${projects.filter(f.match).length}</span></button>`).join('');
-    $('#side-projects').innerHTML = projects.map(project => `<a class=&quot;side-project ${state.projectId === project.id ? 'selected' : ''}&quot; href=&quot;${projectLink(project)}&quot;><span class=&quot;tiny-dot ${esc(project.status)}&quot; aria-hidden=&quot;true&quot;></span>${esc(project.shortName || project.name)}</a>`).join('');
-    $('#filters').innerHTML = filters.map(f => `<button type=&quot;button&quot; class=&quot;filter-button ${state.filter === f.id ? 'active' : ''}&quot; data-filter=&quot;${f.id}&quot; aria-pressed=&quot;${state.filter === f.id}&quot;>${f.name}<span>${projects.filter(f.match).length}</span></button>`).join('');
+    $('#primary-nav').innerHTML = filters.filter(f => f.id !== 'active').map(f => `<button type="button" class="nav-button ${state.filter === f.id ? 'active' : ''}" data-filter="${f.id}" aria-pressed="${state.filter === f.id}">${icon(f.icon)}<span>${f.nav}</span><span class="nav-count">${projects.filter(f.match).length}</span></button>`).join('');
+    $('#side-projects').innerHTML = projects.map(project => `<a class="side-project ${state.projectId === project.id ? 'selected' : ''}" href="${projectLink(project)}"><span class="tiny-dot ${esc(project.status)}" aria-hidden="true"></span>${esc(project.shortName || project.name)}</a>`).join('');
+    $('#filters').innerHTML = filters.map(f => `<button type="button" class="filter-button ${state.filter === f.id ? 'active' : ''}" data-filter="${f.id}" aria-pressed="${state.filter === f.id}">${f.name}<span>${projects.filter(f.match).length}</span></button>`).join('');
     $('#overview-summary').textContent = `${projects.filter(p => p.status === 'active').length} 个推进中，${projects.filter(attention).length} 个需关注`;
   }
 
@@ -715,12 +646,12 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
       const summary = summarize(project);
       const waveIndex = project.waves.findIndex(w => w.id === project.currentWave);
       const wave = project.waves[waveIndex];
-      return `<a role=&quot;listitem&quot; class=&quot;project-row ${state.projectId === project.id ? 'selected' : ''}&quot; href=&quot;${projectLink(project)}&quot; data-project=&quot;${esc(project.id)}&quot; data-status=&quot;${esc(project.status)}&quot; aria-label=&quot;查看${esc(project.name)}，${esc(statusLabels[project.status] || project.status)}，${summary.total ? `${summary.done}/${summary.total} Task` : '尚未登记任务'}&quot;>
-        <div class=&quot;row-top&quot;><span class=&quot;project-icon ${esc(project.color)}&quot;>${icon(project.glyph)}</span><div class=&quot;row-identity&quot;><strong>${esc(project.name)}</strong><span class=&quot;row-wave&quot;>${wave ? `<span class=&quot;wave-code&quot;>WAVE ${String(waveIndex + 1).padStart(2, '0')}</span>${esc(wave.name)}` : '暂无当前阶段'}</span></div>${statusTag(project.status)}</div>
-        <p class=&quot;row-summary&quot;>${esc(project.summary)}</p>
-        <div class=&quot;row-bottom&quot;>${progress(summary, project.name, '', project.status)}<span class=&quot;row-count&quot;>${summary.total ? `<b>${summary.done}</b> / ${summary.total}` : '待拆分'}</span><span class=&quot;row-percent&quot;>${summary.percent === null ? '—' : `${summary.percent}%`}</span><span class=&quot;row-updated&quot;>${esc(reported(project))}</span></div>
+      return `<a role="listitem" class="project-row ${state.projectId === project.id ? 'selected' : ''}" href="${projectLink(project)}" data-project="${esc(project.id)}" data-status="${esc(project.status)}" aria-label="查看${esc(project.name)}，${esc(statusLabels[project.status] || project.status)}，${summary.total ? `${summary.done}/${summary.total} Task` : '尚未登记任务'}">
+        <div class="row-top"><span class="project-icon ${esc(project.color)}">${icon(project.glyph)}</span><div class="row-identity"><strong>${esc(project.name)}</strong><span class="row-wave">${wave ? `<span class="wave-code">WAVE ${String(waveIndex + 1).padStart(2, '0')}</span>${esc(wave.name)}` : '暂无当前阶段'}</span></div>${statusTag(project.status)}</div>
+        <p class="row-summary">${esc(project.summary)}</p>
+        <div class="row-bottom">${progress(summary, project.name, '', project.status)}<span class="row-count">${summary.total ? `<b>${summary.done}</b> / ${summary.total}` : '待拆分'}</span><span class="row-percent">${summary.percent === null ? '—' : `${summary.percent}%`}</span><span class="row-updated">${esc(reported(project))}</span></div>
       </a>`;
-    }).join('') : `<div class=&quot;empty-state&quot; role=&quot;listitem&quot;>${icon('search')}<h2>${live &amp;&amp; !projects.length ? connection === 'loading' ? '正在读取项目' : connection === 'offline' ? '无法读取项目' : '尚无项目' : '没有找到项目'}</h2><p>${state.query ? `没有与“${esc(state.query)}”匹配的项目或任务。` : live &amp;&amp; !projects.length ? connection === 'offline' ? '连接恢复后会自动重试。' : '项目完成首次上报后会显示在这里。' : '这个筛选条件下暂时没有项目。'}</p>${projects.length ? '<button class=&quot;text-button&quot; type=&quot;button&quot; data-action=&quot;clear-search&quot;>清除筛选</button>' : ''}</div>`;
+    }).join('') : `<div class="empty-state" role="listitem">${icon('search')}<h2>${live && !projects.length ? connection === 'loading' ? '正在读取项目' : connection === 'offline' ? '无法读取项目' : '尚无项目' : '没有找到项目'}</h2><p>${state.query ? `没有与“${esc(state.query)}”匹配的项目或任务。` : live && !projects.length ? connection === 'offline' ? '连接恢复后会自动重试。' : '项目完成首次上报后会显示在这里。' : '这个筛选条件下暂时没有项目。'}</p>${projects.length ? '<button class="text-button" type="button" data-action="clear-search">清除筛选</button>' : ''}</div>`;
     $('#project-scroll').scrollTop = scroll;
     renderNavigation();
   }
@@ -728,32 +659,32 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   function waveMarkup(project, wave, index) {
     const summary = summarize({ waves: [wave] });
     const current = project.currentWave === wave.id;
-    const complete = summary.total > 0 &amp;&amp; summary.done === summary.total;
+    const complete = summary.total > 0 && summary.done === summary.total;
     const expanded = state.openWaves.get(project.id)?.has(wave.id);
     const caption = wave.acceptance === 'pending' ? '实施完成 · 待验收' : current ? '当前阶段' : wave.defined === false ? '后续计划' : complete ? '已完成' : '尚未开始';
-    return `<details class=&quot;wave ${current ? 'current' : ''}&quot; data-wave=&quot;${esc(wave.id)}&quot; data-owner=&quot;${esc(project.id)}&quot; ${expanded ? 'open' : ''}>
-      <summary aria-label=&quot;Wave ${index + 1} ${esc(wave.name)} ${summary.total ? `${summary.done}/${summary.total}` : '待细化'}&quot;><span class=&quot;wave-number ${current ? 'current' : complete ? 'complete' : ''} ${wave.defined === false ? 'undefined' : ''}&quot;>${complete &amp;&amp; !current ? icon('check') : String(index + 1).padStart(2, '0')}</span><span class=&quot;wave-title&quot;><strong>${esc(wave.name)}</strong><small>${caption}</small></span><span class=&quot;wave-count ${summary.total ? '' : 'text'}&quot;>${summary.total ? `${summary.done} / ${summary.total}` : '待细化'}</span><span class=&quot;wave-chevron&quot;>${icon('chevronRight')}</span></summary>
-      <div class=&quot;wave-body&quot;>${wave.tasks.length ? wave.tasks.map(task => `<a class=&quot;task-row&quot; data-task=&quot;${esc(task.id)}&quot; data-status=&quot;${esc(task.status)}&quot; href=&quot;${taskLink(project, task)}&quot; aria-label=&quot;查看任务：${esc(task.title)}，${esc(statusLabels[task.status] || task.status)}&quot;>${symbol(task.status)}<span class=&quot;task-name&quot;>${esc(task.title)}${task.status === 'active' ? '<small class=&quot;task-hint&quot;>正在推进</small>' : task.status === 'waiting' ? '<small class=&quot;task-hint&quot;>等待确认</small>' : ''}</span><span class=&quot;task-code&quot;>${esc(task.code)}</span>${icon('chevronRight', 'task-chevron')}</a>`).join('') : '<div class=&quot;wave-empty&quot;>这个阶段还没有拆分 Task，暂不计入已规划范围。</div>'}</div>
+    return `<details class="wave ${current ? 'current' : ''}" data-wave="${esc(wave.id)}" data-owner="${esc(project.id)}" ${expanded ? 'open' : ''}>
+      <summary aria-label="Wave ${index + 1} ${esc(wave.name)} ${summary.total ? `${summary.done}/${summary.total}` : '待细化'}"><span class="wave-number ${current ? 'current' : complete ? 'complete' : ''} ${wave.defined === false ? 'undefined' : ''}">${complete && !current ? icon('check') : String(index + 1).padStart(2, '0')}</span><span class="wave-title"><strong>${esc(wave.name)}</strong><small>${caption}</small></span><span class="wave-count ${summary.total ? '' : 'text'}">${summary.total ? `${summary.done} / ${summary.total}` : '待细化'}</span><span class="wave-chevron">${icon('chevronRight')}</span></summary>
+      <div class="wave-body">${wave.tasks.length ? wave.tasks.map(task => `<a class="task-row" data-task="${esc(task.id)}" data-status="${esc(task.status)}" href="${taskLink(project, task)}" aria-label="查看任务：${esc(task.title)}，${esc(statusLabels[task.status] || task.status)}">${symbol(task.status)}<span class="task-name">${esc(task.title)}${task.status === 'active' ? '<small class="task-hint">正在推进</small>' : task.status === 'waiting' ? '<small class="task-hint">等待确认</small>' : ''}</span><span class="task-code">${esc(task.code)}</span>${icon('chevronRight', 'task-chevron')}</a>`).join('') : '<div class="wave-empty">这个阶段还没有拆分 Task，暂不计入已规划范围。</div>'}</div>
     </details>`;
   }
 
   function projectMarkup(project) {
     const summary = summarize(project);
     const ongoing = project.waves.flatMap(w => w.tasks).find(t => ['active', 'waiting', 'blocked'].includes(t.status));
-    const focus = ongoing ? `<a class=&quot;focus-note ${esc(project.status)}&quot; href=&quot;${taskLink(project, ongoing)}&quot;><span class=&quot;focus-label&quot;>${project.status === 'blocked' ? '需要你确认' : '当前在做'}${icon('arrowUpRight')}</span><strong>${esc(project.blocker || ongoing.title)}</strong></a>`
-      : project.status === 'blocked' &amp;&amp; project.blocker ? `<div class=&quot;focus-note blocked&quot;><span class=&quot;focus-label&quot;>当前阻塞</span><strong>${esc(project.blocker)}</strong></div>`
-      : summary.pendingAcceptance ? '<div class=&quot;focus-note review&quot;><span class=&quot;focus-label&quot;>等待阶段验收</span><strong>实施工作已完成，可以查看本阶段的交付效果。</strong></div>' : '';
-    return `<div class=&quot;detail-nav&quot;><span class=&quot;desktop-detail-label&quot;>项目详情</span><a class=&quot;back-link mobile-back&quot; href=&quot;#&quot;>${icon('arrowLeft')}全部项目</a><span class=&quot;detail-nav-end&quot;>${icon('eye')}只读</span></div>
-      <div class=&quot;detail-content&quot;><div class=&quot;detail-project-heading&quot;><span class=&quot;project-icon ${esc(project.color)}&quot;>${icon(project.glyph)}</span><div class=&quot;detail-title-wrap&quot;><h2 tabindex=&quot;-1&quot;>${esc(project.name)}</h2><span class=&quot;category-label&quot;>${esc(project.category)}</span></div>${statusTag(project.status)}</div>
-      <p class=&quot;detail-description&quot;>${esc(project.description)}</p>
-      <div class=&quot;metric-top&quot;><span>已规划范围</span><div class=&quot;metric-ratio&quot;><span>${summary.total ? `${summary.done} / ${summary.total} Task` : '尚未登记任务'}</span><strong>${summary.percent === null ? '—' : `${summary.percent}<small>%</small>`}</strong></div></div>
+    const focus = ongoing ? `<a class="focus-note ${esc(project.status)}" href="${taskLink(project, ongoing)}"><span class="focus-label">${project.status === 'blocked' ? '需要你确认' : '当前在做'}${icon('arrowUpRight')}</span><strong>${esc(project.blocker || ongoing.title)}</strong></a>`
+      : project.status === 'blocked' && project.blocker ? `<div class="focus-note blocked"><span class="focus-label">当前阻塞</span><strong>${esc(project.blocker)}</strong></div>`
+      : summary.pendingAcceptance ? '<div class="focus-note review"><span class="focus-label">等待阶段验收</span><strong>实施工作已完成，可以查看本阶段的交付效果。</strong></div>' : '';
+    return `<div class="detail-nav"><span class="desktop-detail-label">项目详情</span><a class="back-link mobile-back" href="#">${icon('arrowLeft')}全部项目</a><span class="detail-nav-end">${icon('eye')}只读</span></div>
+      <div class="detail-content"><div class="detail-project-heading"><span class="project-icon ${esc(project.color)}">${icon(project.glyph)}</span><div class="detail-title-wrap"><h2 tabindex="-1">${esc(project.name)}</h2><span class="category-label">${esc(project.category)}</span></div>${statusTag(project.status)}</div>
+      <p class="detail-description">${esc(project.description)}</p>
+      <div class="metric-top"><span>已规划范围</span><div class="metric-ratio"><span>${summary.total ? `${summary.done} / ${summary.total} Task` : '尚未登记任务'}</span><strong>${summary.percent === null ? '—' : `${summary.percent}<small>%</small>`}</strong></div></div>
       ${progress(summary, project.name, 'detail-progress', project.status)}
-      <div class=&quot;scope-note ${summary.pendingAcceptance ? 'pending' : ''}&quot;>${icon(summary.pendingAcceptance ? 'clock' : 'layers')}<span>${summary.pendingAcceptance ? `${summary.pendingAcceptance} 个验收事项待确认，实施完成度已计入。` : summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化，以上仅统计已规划 Task。` : project.status === 'complete' ? '全部任务已完成，交付检查已通过。' : '按 Task 等权计量，子项不增加任务总数。'}</span></div>
+      <div class="scope-note ${summary.pendingAcceptance ? 'pending' : ''}">${icon(summary.pendingAcceptance ? 'clock' : 'layers')}<span>${summary.pendingAcceptance ? `${summary.pendingAcceptance} 个验收事项待确认，实施完成度已计入。` : summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化，以上仅统计已规划 Task。` : project.status === 'complete' ? '全部任务已完成，交付检查已通过。' : '按 Task 等权计量，子项不增加任务总数。'}</span></div>
       ${focus}
-      <div class=&quot;section-heading&quot;><h3>阶段与任务</h3><span>${String(project.waves.length).padStart(2, '0')} WAVES</span></div>
-      <div class=&quot;wave-list&quot;>${project.waves.length ? project.waves.map((wave, index) => waveMarkup(project, wave, index)).join('') : '<div class=&quot;wave-empty&quot;>尚未登记阶段，项目上报后会在这里显示。</div>'}</div>
-      <div class=&quot;section-heading&quot;><h3>最近进展</h3>${live ? '' : '<span>示例记录</span>'}</div><ol class=&quot;activity-list&quot;>${project.updates.map(update => `<li><time>${esc(live ? localTime(update.at) : update.time)}</time><div><strong>${esc(update.text)}</strong><small>${esc(update.detail)}</small></div></li>`).join('')}</ol>
-      <div class=&quot;detail-end&quot;>最后上报 · ${esc(live ? localTime(project.receivedAt) : project.updatedAt)}</div></div>`;
+      <div class="section-heading"><h3>阶段与任务</h3><span>${String(project.waves.length).padStart(2, '0')} WAVES</span></div>
+      <div class="wave-list">${project.waves.length ? project.waves.map((wave, index) => waveMarkup(project, wave, index)).join('') : '<div class="wave-empty">尚未登记阶段，项目上报后会在这里显示。</div>'}</div>
+      <div class="section-heading"><h3>最近进展</h3>${live ? '' : '<span>示例记录</span>'}</div><ol class="activity-list">${project.updates.map(update => `<li><time>${esc(live ? localTime(update.at) : update.time)}</time><div><strong>${esc(update.text)}</strong><small>${esc(update.detail)}</small></div></li>`).join('')}</ol>
+      <div class="detail-end">最后上报 · ${esc(live ? localTime(project.receivedAt) : project.updatedAt)}</div></div>`;
   }
 
   function taskMarkup(project, taskId) {
@@ -761,22 +692,22 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
     if (!wave) return projectMarkup(project);
     const task = wave.tasks.find(t => t.id === taskId);
     const childrenDone = task.children.filter(child => child.status === 'done').length;
-    return `<div class=&quot;detail-nav&quot;><a class=&quot;back-link&quot; href=&quot;${projectLink(project)}&quot;>${icon('arrowLeft')}返回项目</a><span class=&quot;detail-nav-end&quot;>${icon('eye')}任务详情</span></div>
-      <div class=&quot;detail-content&quot;><div class=&quot;task-breadcrumb&quot;>${esc(project.name)}<span class=&quot;sub-dot&quot;> / </span>${esc(wave.name)}</div><h2 class=&quot;task-heading&quot; tabindex=&quot;-1&quot;>${esc(task.title)}</h2><div class=&quot;task-tags&quot;><span class=&quot;task-id&quot;>${esc(task.code)}</span>${statusTag(task.status)}${task.acceptance === 'pending' ? statusTag('review') : ''}</div>
-      <div class=&quot;section-heading&quot;><h3>任务目标</h3></div><p class=&quot;task-copy&quot;>${esc(task.goal)}</p>
-      <div class=&quot;task-update&quot;><div class=&quot;eyebrow&quot;>最近进展</div><p>${esc(task.summary)}</p></div>
-      ${task.blocker ? `<div class=&quot;blocking-callout&quot;><strong>等待确认</strong><br>${esc(task.blocker)}</div>` : ''}
-      ${task.children.length ? `<div class=&quot;section-heading&quot;><h3>子项</h3><span>${childrenDone} / ${task.children.length} 已完成</span></div><ul class=&quot;subtask-list&quot;>${task.children.map(child => `<li class=&quot;${esc(child.status)}&quot;>${symbol(child.status)}<span>${esc(child.title)}</span></li>`).join('')}</ul><p class=&quot;fine-note&quot;>子项展示执行细节，这个 Task 始终按 1 个任务计量。</p>` : ''}
-      <div class=&quot;section-heading&quot;><h3>${task.verified ? '完成依据' : '验证与记录'}</h3>${task.verified ? '<span>已通过检查</span>' : ''}</div>
-      ${task.evidence.length ? `<dl class=&quot;evidence-list&quot;>${task.evidence.map(evidence => `<div><dt>${esc(evidence.label)}</dt><dd>${esc(evidence.text)}</dd></div>`).join('')}</dl>` : '<p class=&quot;task-copy&quot;>尚未提交验证结果，完成后由项目侧更新。</p>'}
-      <div class=&quot;task-meta&quot;><div><small>所属阶段</small><span>${esc(wave.name)}</span></div><div><small>${live ? '任务更新' : '最后上报'}</small><span>${esc(live ? localTime(task.updatedAt) : task.updated)}</span></div></div>
-      <div class=&quot;detail-end&quot; style=&quot;margin-top:28px&quot;>${live ? '项目上报 · ' : '示例任务 · '}只读查看</div></div>`;
+    return `<div class="detail-nav"><a class="back-link" href="${projectLink(project)}">${icon('arrowLeft')}返回项目</a><span class="detail-nav-end">${icon('eye')}任务详情</span></div>
+      <div class="detail-content"><div class="task-breadcrumb">${esc(project.name)}<span class="sub-dot"> / </span>${esc(wave.name)}</div><h2 class="task-heading" tabindex="-1">${esc(task.title)}</h2><div class="task-tags"><span class="task-id">${esc(task.code)}</span>${statusTag(task.status)}${task.acceptance === 'pending' ? statusTag('review') : ''}</div>
+      <div class="section-heading"><h3>任务目标</h3></div><p class="task-copy">${esc(task.goal)}</p>
+      <div class="task-update"><div class="eyebrow">最近进展</div><p>${esc(task.summary)}</p></div>
+      ${task.blocker ? `<div class="blocking-callout"><strong>等待确认</strong><br>${esc(task.blocker)}</div>` : ''}
+      ${task.children.length ? `<div class="section-heading"><h3>子项</h3><span>${childrenDone} / ${task.children.length} 已完成</span></div><ul class="subtask-list">${task.children.map(child => `<li class="${esc(child.status)}">${symbol(child.status)}<span>${esc(child.title)}</span></li>`).join('')}</ul><p class="fine-note">子项展示执行细节，这个 Task 始终按 1 个任务计量。</p>` : ''}
+      <div class="section-heading"><h3>${task.verified ? '完成依据' : '验证与记录'}</h3>${task.verified ? '<span>已通过检查</span>' : ''}</div>
+      ${task.evidence.length ? `<dl class="evidence-list">${task.evidence.map(evidence => `<div><dt>${esc(evidence.label)}</dt><dd>${esc(evidence.text)}</dd></div>`).join('')}</dl>` : '<p class="task-copy">尚未提交验证结果，完成后由项目侧更新。</p>'}
+      <div class="task-meta"><div><small>所属阶段</small><span>${esc(wave.name)}</span></div><div><small>${live ? '任务更新' : '最后上报'}</small><span>${esc(live ? localTime(task.updatedAt) : task.updated)}</span></div></div>
+      <div class="detail-end" style="margin-top:28px">${live ? '项目上报 · ' : '示例任务 · '}只读查看</div></div>`;
   }
 
   function renderDetail() {
     const panel = $('#detail-panel');
-    if (!activeProject() || (!visibleProjects().length &amp;&amp; state.view === 'home')) {
-      panel.innerHTML = `<div class=&quot;empty-state&quot;>${icon('layers')}<h2>选择一个项目</h2><p>项目的阶段、任务和最近进展会显示在这里。</p></div>`;
+    if (!activeProject() || (!visibleProjects().length && state.view === 'home')) {
+      panel.innerHTML = `<div class="empty-state">${icon('layers')}<h2>选择一个项目</h2><p>项目的阶段、任务和最近进展会显示在这里。</p></div>`;
       return;
     }
     const project = activeProject();
@@ -790,23 +721,23 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
     const detailScroll = $('#detail-panel').scrollTop;
     const focused = dataRefresh ? document.activeElement : null;
     const focusScope = focused?.closest?.('#filters,#primary-nav,#side-projects,#project-list,#detail-panel');
-    const focusKey = focusScope &amp;&amp; focused !== focusScope ? focused.dataset.filter ? ['filter', focused.dataset.filter]
+    const focusKey = focusScope && focused !== focusScope ? focused.dataset.filter ? ['filter', focused.dataset.filter]
       : focused.dataset.project ? ['project', focused.dataset.project]
       : focused.dataset.task ? ['task', focused.dataset.task]
-      : focused.closest('details[data-wave]') &amp;&amp; focused.tagName === 'SUMMARY' ? ['wave', focused.closest('details[data-wave]').dataset.wave]
+      : focused.closest('details[data-wave]') && focused.tagName === 'SUMMARY' ? ['wave', focused.closest('details[data-wave]').dataset.wave]
       : focused.getAttribute('href') ? ['href', focused.getAttribute('href')]
       : focused.tagName === 'H2' ? ['heading', ''] : null : null;
     const routeProject = parts[0] === 'project' ? projects.find(p => p.id === parts[1]) : null;
     if (routeProject) {
       state.projectId = routeProject.id;
-      state.view = parts[2] === 'task' &amp;&amp; routeProject.waves.some(w => w.tasks.some(t => t.id === parts[3])) ? 'task' : 'project';
+      state.view = parts[2] === 'task' && routeProject.waves.some(w => w.tasks.some(t => t.id === parts[3])) ? 'task' : 'project';
       state.taskId = state.view === 'task' ? parts[3] : null;
     } else { state.view = 'home'; state.taskId = null; }
-    if (live &amp;&amp; connection === 'online' &amp;&amp; location.hash.startsWith('#project/')) {
+    if (live && connection === 'online' && location.hash.startsWith('#project/')) {
       const canonical = routeProject ? state.view === 'task' ? taskLink(routeProject, routeProject.waves.flatMap(w => w.tasks).find(t => t.id === state.taskId)) : projectLink(routeProject) : '';
       if (location.hash !== canonical) history.replaceState(null, '', `${location.pathname}${location.search}${canonical}`);
     }
-    if (state.view === 'home' &amp;&amp; !visibleProjects().some(p => p.id === state.projectId)) state.projectId = visibleProjects()[0]?.id || null;
+    if (state.view === 'home' && !visibleProjects().some(p => p.id === state.projectId)) state.projectId = visibleProjects()[0]?.id || null;
     document.body.dataset.view = state.view;
     renderList(); renderDetail();
     $('#detail-panel').scrollTop = dataRefresh ? detailScroll : 0;
@@ -817,10 +748,10 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
       (replacement || $('#project-search')).focus({ preventScroll: true });
     }
     document.title = state.view === 'home' ? '进度簿 · 项目总览' : `${activeProject()?.name || '项目'} · 进度簿`;
-    if (!initial &amp;&amp; !dataRefresh &amp;&amp; matchMedia('(max-width: 1000px)').matches) {
+    if (!initial && !dataRefresh && matchMedia('(max-width: 1000px)').matches) {
       requestAnimationFrame(() => {
         window.scrollTo(0, state.view === 'home' ? state.homeScroll : 0);
-        if (state.view !== 'home' &amp;&amp; oldView !== state.view) $('#detail-panel h2')?.focus({ preventScroll: true });
+        if (state.view !== 'home' && oldView !== state.view) $('#detail-panel h2')?.focus({ preventScroll: true });
       });
     }
   }
@@ -828,27 +759,27 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   function updateFilter(id) {
     state.filter = id;
     const visible = visibleProjects();
-    if (visible.length &amp;&amp; !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
+    if (visible.length && !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
     if (location.hash) location.hash = '';
     state.view = 'home'; state.taskId = null; document.body.dataset.view = 'home';
     renderList(); renderDetail();
   }
 
   document.addEventListener('click', event => {
-    const link = event.target.closest('a[href^=&quot;#&quot;]');
-    if (link &amp;&amp; state.view === 'home' &amp;&amp; link.getAttribute('href').startsWith('#project/')) state.homeScroll = window.scrollY;
-    if (link &amp;&amp; link.dataset.action !== 'skip') {
+    const link = event.target.closest('a[href^="#"]');
+    if (link && state.view === 'home' && link.getAttribute('href').startsWith('#project/')) state.homeScroll = window.scrollY;
+    if (link && link.dataset.action !== 'skip') {
       // srcdoc inherits its parent's base URL; set the fragment on this document.
       event.preventDefault();
       const next = link.getAttribute('href');
-      if (location.hash === next || (next === '#' &amp;&amp; !location.hash)) applyRoute();
+      if (location.hash === next || (next === '#' && !location.hash)) applyRoute();
       else location.hash = next;
     }
     const filter = event.target.closest('[data-filter]');
     if (filter) {
       const fromSidebar = Boolean(filter.closest('#primary-nav'));
       updateFilter(filter.dataset.filter);
-      (fromSidebar ? $('#primary-nav') : $('#filters')).querySelector(`[data-filter=&quot;${state.filter}&quot;]`)?.focus({ preventScroll: true });
+      (fromSidebar ? $('#primary-nav') : $('#filters')).querySelector(`[data-filter="${state.filter}"]`)?.focus({ preventScroll: true });
     }
     const action = event.target.closest('[data-action]')?.dataset.action;
     if (action === 'rules') $('#rules-dialog').showModal();
@@ -861,7 +792,7 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
     }
   });
   document.addEventListener('toggle', event => {
-    if (event.target.matches?.('details[data-wave]') &amp;&amp; event.target.isConnected) {
+    if (event.target.matches?.('details[data-wave]') && event.target.isConnected) {
       const open = state.openWaves.get(event.target.dataset.owner);
       if (!open) return;
       if (event.target.open) open.add(event.target.dataset.wave); else open.delete(event.target.dataset.wave);
@@ -870,7 +801,7 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
   $('#project-search').addEventListener('input', event => {
     state.query = event.target.value;
     const visible = visibleProjects();
-    if (visible.length &amp;&amp; !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
+    if (visible.length && !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
     if (state.view !== 'home') {
       const next = visible.length ? projectLink(activeProject()) : '#';
       if (location.hash !== next) { location.hash = next; return; }
@@ -878,9 +809,9 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
     applyRoute();
   });
   document.addEventListener('keydown', event => {
-    if ((event.ctrlKey || event.metaKey) &amp;&amp; event.key.toLowerCase() === 'k') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
-      if (matchMedia('(max-width: 1000px)').matches &amp;&amp; state.view !== 'home') { location.hash = ''; setTimeout(() => $('#project-search').focus(), 0); }
+      if (matchMedia('(max-width: 1000px)').matches && state.view !== 'home') { location.hash = ''; setTimeout(() => $('#project-search').focus(), 0); }
       else $('#project-search').focus();
     }
   });
@@ -904,21 +835,6 @@ body[data-connection=&quot;offline&quot;] .snapshot-dot, body[data-connection=&q
     applyRoute(false, true);
   } }).start();
 })();
-
-document.addEventListener('click', event => {
-  const menu = document.querySelector('#demo-menu');
-  const scenario = event.target.closest('[data-scenario]')?.dataset.scenario;
-  if (scenario) {
-    document.querySelector('#offline-banner').hidden = scenario !== 'offline';
-    document.querySelector('#snapshot-label').textContent = scenario === 'offline' ? '离线 · 保留示例快照' : '示例快照 · 今天 14:38';
-    document.querySelectorAll('[data-check]').forEach(node => { node.textContent = node.dataset.check === scenario ? '✓' : ''; });
-    menu.open = false;
-  } else if (!event.target.closest('#demo-menu')) menu.open = false;
-});
-document.addEventListener('keydown', event => {
-  if (event.key === 'Escape') document.querySelector('#demo-menu').open = false;
-});
 </script>
 </body>
 </html>
-"></iframe></main><script>document.querySelector('#preview-width').addEventListener('change',function(){document.querySelector('#phone').style.width=this.value+'px'});</script></body></html>

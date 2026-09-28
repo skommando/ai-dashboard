@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-09-28T08:55:02.965Z",
+  "engine": "Playwright Chromium",
+  "apiRequests": 11,
+  "peakConcurrency": 1,
+  "mobileWidth": {
+    "page": 375,
+    "viewport": 375
+  },
+  "realIPhoneTested": false
+}

@@ -131,8 +131,12 @@ progress { display: block; appearance: none; -webkit-appearance: none; border: n
 progress::-webkit-progress-bar { background: #e8ede5; border-radius: 6px; }
 progress::-webkit-progress-value { background: var(--accent); border-radius: 6px; }
 progress::-moz-progress-bar { background: var(--accent); border-radius: 6px; }
-.project-row[data-status="blocked"] progress::-webkit-progress-value { background: #b39170; }
-.project-row[data-status="blocked"] progress::-moz-progress-bar { background: #b39170; }
+progress.blocked { color: var(--red); }
+progress.blocked::-webkit-progress-value, .project-row[data-status="blocked"] progress::-webkit-progress-value { background: var(--red); }
+progress.blocked::-moz-progress-bar, .project-row[data-status="blocked"] progress::-moz-progress-bar { background: var(--red); }
+progress.review { color: var(--amber); }
+progress.review::-webkit-progress-value, .project-row[data-status="review"] progress::-webkit-progress-value { background: var(--amber); }
+progress.review::-moz-progress-bar, .project-row[data-status="review"] progress::-moz-progress-bar { background: var(--amber); }
 .project-row[data-status="complete"] progress::-webkit-progress-value { background: #91a187; }
 .project-row[data-status="complete"] progress::-moz-progress-bar { background: #91a187; }
 .row-count { font: 10px var(--mono); color: #8d9788; min-width: 33px; text-align: right; }
@@ -142,6 +146,7 @@ progress::-moz-progress-bar { background: var(--accent); border-radius: 6px; }
 .unplanned-track { flex: 1; height: 4px; border-radius: 5px; background: repeating-linear-gradient(90deg, #dfe4d8 0, #dfe4d8 5px, transparent 5px, transparent 9px); }
 .list-footer { display: flex; align-items: center; gap: 6px; color: #97a18f; font-size: 9px; flex: 0 0 auto; padding: 13px 2px 0; }
 .snapshot-dot { width: 4px; height: 4px; border-radius: 50%; background: #99a88f; }
+body[data-connection="offline"] .snapshot-dot, body[data-connection="offline"] .source-dot { background: var(--red); }
 .read-only-label { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 .read-only-label svg { width: 12px; height: 12px; }
 .detail-panel { min-width: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #d8dfd3 transparent; border: 1px solid #e0e6dc; border-radius: 10px; background: white; }
