@@ -58,3 +58,20 @@ python clients/report_progress.py send --request-file .runtime/request-001.json 
 服务把完整快照、revision、事件和回执放在同一个 SQLite 事务里，启用 WAL、busy timeout 与 `synchronous=FULL`。成功后保留最近快照、所有简短事件和幂等回执；当前版本不提供全量历史版本回滚。错误采用结构化 JSON，例如 `{"error":{"code":"revision_conflict","message":"..."},"current_revision":2}`，不包含凭据或本机路径。
 
 后端测试：`python -m unittest tests.test_backend tests.test_cli -v`。
+
+## 为另一个本机项目接入
+
+在本仓库根目录、使用本项目虚拟环境，先登记一个稳定项目 ID。以下 `my-project` 只是占位，需替换为真实项目。
+
+```powershell
+.\.venv\Scripts\python.exe -m dashboard.manage register my-project --db .runtime/dashboard.sqlite3 --token-file .runtime/credentials/my-project.token
+```
+
+将 `examples/sample-snapshot.json` 复制到该项目自己的工作目录，填写真实计划和状态；第一次上报 `expected_revision` 为 0。后续可这样查询版本（不会输出令牌）：
+
+```powershell
+$projectToken = (Get-Content -Raw .runtime/credentials/my-project.token).Trim()
+Invoke-RestMethod -Uri 'http://127.0.0.1:8811/api/v1/projects/my-project/revision' -Headers @{ Authorization = "Bearer $projectToken" }
+```
+
+用 `prepare` 把本次快照封存成一个新请求文件，再调用 `send`；网络重试继续发送原文件。客户端是独立的标准库 Python 脚本，其他项目可用其绝对路径调用，无需引入本看板的 Python 包。远程手机只访问查看域名，不持有项目上报 token，也不能用查看账号写入进度。

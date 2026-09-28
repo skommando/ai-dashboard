@@ -4,11 +4,11 @@
 
 - 仓库：`D:\example-user\repos\ai-dashboard`；当前开发主机为 Windows，命令环境为 PowerShell。
 - 目标：方便用户通过 iPhone 远程查看本机运行的多个项目，统一呈现各项目进度。
-- 需要设计统一且可解释的进度计量指标，以及供各项目主动更新状态的公共接口；候选为 MCP、HTTP API（以 OpenAPI 描述），具体组合尚未确定。
+- 已确定按 Task 等权计量，子项不增加分母；各项目使用 HTTP API（OpenAPI 描述）上报原子快照，以 revision 和幂等键防止旧报告覆盖与重复写入。本轮未实现 MCP。
 - 查看端需要直观、友好并适配手机与桌面。是否另需命令行终端界面尚未确认，不把“终端兼容”直接解释为必须实现 TUI。
-- 当前交付为纯展示 HTML demo：`demo/index.html` 自适应桌面/手机，`demo/mobile.html` 为独立手机预览。后端已确定 Python + SQLite，但服务、接口和数据库尚未实现；正式前端建议 Vue 3 + TypeScript。
-- 实际入口：`node scripts/build-demo.cjs` 构建导出；`node --test tests/progress-model.test.cjs` 检查计量；`node scripts/check-demo.cjs` 做浏览器检查（需可用的 Playwright/Chromium）。可直接打开 HTML，或执行 `python -m http.server 8765 --bind 127.0.0.1 --directory demo` 提供本机预览。
-- 当前未包含远程控制项目、AI 编码执行器、模型聊天平台、多用户协作、原生 iOS 应用及公网部署；新增这些范围应有具体需求支持。
+- 当前实现为 Python 3.12 + FastAPI + SQLite 与原生前端。`web/index.html` 读取真实数据；`demo/index.html` 和 `demo/mobile.html` 保留离线样例。运行配置、数据库、令牌和日志统一置于忽略的 `.runtime/`。
+- 入口：`node scripts/build-demo.cjs` 构建；`node --test tests/*.cjs` 和 `.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v` 检查规则；浏览器脚本为 `scripts/check-demo.cjs`、`scripts/check-live.cjs`（需 Playwright/Chromium）。本机服务用 `scripts/service.py run|status|stop --config .runtime/service.json` 管理，详见运行文档。
+- 当前用户已授权本机及 `dashboard.example.com` 的只读部署。读取8810与上报8811独立绑定回环；VPS专用frps控制8072，代理8083仅回环。公网只转发读取，保留HTTPS/Basic Auth。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
 
 ## 文档入口与裁决
 
@@ -17,7 +17,7 @@
 - `demo/README.md`：demo 使用、源码、构建与验证；`docs/superpowers/specs/2026-09-28-progress-dashboard-design.md`：已确认的展示口径；`docs/verification/`：实际验证证据。
 - 项目内裁决顺序：用户当前明确指令与有效授权 → 本文件 → 已批准的设计和计划 → README 与研究记录。研究建议不等于批准实施的方案；更高优先级的运行环境和工具约束仍然适用。
 - 修改已有 `AGENTS.md` 或其他 agent 专用约定需要明确授权；普通文档、实现和必要检查在任务范围内自主处理。
-- 当前 demo 执行计划与进展位于 `docs/superpowers/plans/2026-09-28-frontend-demo.md`；未来多阶段后端开发再按实际范围组织任务。
+- 当前后端与上线检查点位于 `docs/superpowers/plans/2026-09-28-live-dashboard.md`；契约为同名 `docs/superpowers/specs/2026-09-28-live-dashboard-contract.md`。demo 计划保留为历史记录。
 
 ## 交互、范围与授权
 
@@ -46,7 +46,7 @@
 - reviewer 独立于实现者，委派时明确只读范围和已有证据；未经授权不改文件、不提交、不启动服务。
 - 核心行为、用户必修项和发布阻断必须处理；非核心建议记录后在相应验收点裁决。重复检查没有新信息时先调整方法。
 - 完成报告说明改动、验证入口与实际结果、证据位置和剩余限制。实现完成、验证通过、用户验收和发布是不同事实，不互相替代。
-- 当前 demo 完成条件：导出文件可独立打开，计量和只读边界正确，桌面/手机核心流程已检查，截图和验证记录可追溯；不将 demo 完成称为后端或部署完成。
+- 当前服务交付条件：计量和读写隔离正确，原子版本/幂等回执通过测试，实际域名鉴权、上报可见、离线恢复与重启持久化有证据；浏览器模拟与真实iPhone体验分别说明。
 
 ## Git、检查点与恢复
 

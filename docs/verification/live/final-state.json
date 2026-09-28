@@ -1,0 +1,14 @@
+{
+  "url": "https://dashboard.example.com",
+  "project_id": "ai-dashboard",
+  "revision": 7,
+  "progress": {
+    "done": 4,
+    "total": 4,
+    "percent": 100,
+    "unplannedWaves": 0,
+    "pendingAcceptance": 0
+  },
+  "status": "complete",
+  "consistent_backup_created": true
+}

@@ -13,4 +13,20 @@ powershell -NoProfile -File scripts/stop-dashboard.ps1
 
 `.runtime/service-state.json` 仅含实例标识、PID、心跳、组件退出码和重启信息；环境变量和命令参数不会写入其中。各组件输出写入 `.runtime/<name>.log`，每份日志最多约 1 MiB，另保留一份轮换备份。应用或 frpc 自身若向标准输出写出秘密，日志也会记录该内容，因此接入时应检查其日志行为并限制 `.runtime` 的访问权限。
 
-登录自启任务由部署人员在当前用户权限下配置，目标为 `scripts/start-dashboard.ps1`；此仓库脚本不会自行注册计划任务。配置任务前应先确认手动启动、状态查询、停止都成功。不要用旧状态文件中的 PID 手动结束进程。
+登录自启任务由部署人员在当前用户权限下配置，动作应直接运行 `pythonw.exe scripts/service.py run --config ...`，使任务状态对应常驻监督器；PowerShell 启动包装用于手动启动/确认。仓库脚本不会自行注册计划任务。配置前先确认启动、状态查询和停止都成功，不要用旧状态文件中的 PID 手动结束进程。
+
+## 本机已部署实例
+
+2026-09-28 已注册当前用户登录任务 `AI Dashboard - dashboard.example.com`。实际任务直接运行本项目虚拟环境的 `pythonw.exe scripts/service.py run --config ...`，不依赖终端或 Codex 会话保持打开。它以当前用户权限运行，属于登录自启，不表示登录前的系统服务。
+
+```powershell
+Start-ScheduledTask -TaskName 'AI Dashboard - dashboard.example.com'
+.\.venv\Scripts\python.exe scripts/service.py status --config .runtime/service.json
+powershell -NoProfile -File scripts/stop-dashboard.ps1
+```
+
+监督器状态表示进程存活；上线还必须查看本机 `/healthz` 和实际 HTTPS 页面，不能把 PID 稳定当成 HTTP 或隧道可用。停止本机服务后，域名会返回需要登录才能看的静态离线页；重新启动后恢复真实查询，SQLite 中的项目与幂等回执保留。
+
+私有配置在 `.runtime/service.json`，数据库在 `.runtime/dashboard.sqlite3`，项目令牌在 `.runtime/credentials/`，frpc 在 `.runtime/bin/`。`.runtime` 的 Windows ACL 仅当前用户和 SYSTEM，Git 忽略整个目录。查看密码需与 VPS Basic Auth 一致，但不放入前端或仓库文档。
+
+VPS 专用服务和恢复步骤见 [VPS 部署说明](vps-deployment.md)。不修改共享 `frps.service` 或其他站点来排查本项目问题。部署运行使用当前仓库文件，更新前保留检查点，并在经过测试的版本上重启本项目服务。
