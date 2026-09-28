@@ -1,0 +1,27 @@
+[Unit]
+Description=ai-dashboard dedicated frp server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ai-dashboard
+Group=ai-dashboard
+ExecStart=/usr/local/lib/ai-dashboard/frps -c /etc/ai-dashboard/frps.toml
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target
