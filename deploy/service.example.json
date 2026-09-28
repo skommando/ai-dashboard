@@ -1,0 +1,24 @@
+{
+  "working_directory": "D:\\example-user\\repos\\ai-dashboard",
+  "runtime_directory": "D:\\example-user\\repos\\ai-dashboard\\.runtime",
+  "environment": {
+    "DASHBOARD_DB_PATH": "D:\\example-user\\repos\\ai-dashboard\\.runtime\\dashboard.sqlite3",
+    "DASHBOARD_WEB_DIR": "D:\\example-user\\repos\\ai-dashboard\\web",
+    "DASHBOARD_VIEW_USERNAME": "replace-with-view-username",
+    "DASHBOARD_VIEW_PASSWORD": "replace-with-view-password"
+  },
+  "components": [
+    {
+      "name": "reader",
+      "command": ["D:\\example-user\\repos\\ai-dashboard\\.venv\\Scripts\\python.exe", "-m", "dashboard.server", "--role", "read", "--host", "127.0.0.1", "--port", "8810"]
+    },
+    {
+      "name": "writer",
+      "command": ["D:\\example-user\\repos\\ai-dashboard\\.venv\\Scripts\\python.exe", "-m", "dashboard.server", "--role", "write", "--host", "127.0.0.1", "--port", "8811"]
+    },
+    {
+      "name": "frpc",
+      "command": ["D:\\example-user\\repos\\ai-dashboard\\.runtime\\frpc.exe", "-c", "D:\\example-user\\repos\\ai-dashboard\\.runtime\\frpc.toml"]
+    }
+  ]
+}
