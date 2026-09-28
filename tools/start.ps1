@@ -42,6 +42,13 @@ function Set-PrivateAcl([string]$Path, [bool]$Directory) {
     # Change only the DACL; a fresh descriptor can require SACL/owner privileges
     # on a previously protected directory in Windows PowerShell.
     $acl = Get-Acl -LiteralPath $Path
+    $ownerSid = $acl.GetOwner([System.Security.Principal.SecurityIdentifier]).Value
+    if ($ownerSid -notin @($sid, 'S-1-5-18')) {
+        throw '[runtime_owner_mismatch] Existing runtime data must belong to the current user or SYSTEM.'
+    }
+    if (((Get-Item -LiteralPath $Path -Force).Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+        throw 'Runtime data must not be a symbolic link or junction.'
+    }
     $acl.SetAccessRuleProtection($true, $false)
     foreach ($existingRule in @($acl.Access)) {
         $acl.RemoveAccessRuleSpecific($existingRule)
