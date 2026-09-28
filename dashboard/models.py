@@ -52,8 +52,8 @@ class Task(StrictModel):
     status: TaskStatus = "todo"
     verified: bool = False
     acceptance: Acceptance = "not_required"
-    goal: Text = ""
-    summary: Text = ""
+    goal: Text = Field(default="", description="任务目标：说明要解决的问题、影响的功能或使用场景，以及预期达到的结果。不要只重复任务标题。")
+    summary: Text = Field(default="", description="任务截至当前的工作概述：按主要事项分行列出具体做了什么及结果，通常2–5项，简单任务可1项；使用•或编号并以换行分隔。明确区分已完成、进行中及待完成，更新时保留已完成的主要工作。不要只写日期、验收通过或阶段代号，不逐文件/函数罗列代码。验收与测试依据放在evidence，阻塞原因放在blocker。缺少事实时明确说明，不编造；最多2000字符。")
     updatedAt: str | None = None
     blocker: Text | None = None
     evidence: list[Evidence] = Field(default_factory=list, max_length=100)

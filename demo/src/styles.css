@@ -232,6 +232,7 @@ body[data-connection="offline"] .snapshot-dot, body[data-connection="offline"] .
 .task-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
 .task-id { font: 11px var(--mono); color: #819073; background: #f1f5eb; border: 1px solid #e5ecdb; padding: 5px 6px; border-radius: 4px; }
 .task-copy { font-size: 12px; line-height: 1.95; color: #788a69; margin: 0; overflow-wrap: anywhere; }
+.task-copy, .task-update p { white-space: pre-line; }
 .task-update { background: #f3f7ee; border-radius: 7px; padding: 15px; margin-top: 24px; }
 .task-update .eyebrow { color: #9aab87; margin-bottom: 7px; }
 .task-update p { margin: 0; font-size: 12px; line-height: 1.9; color: #6d8658; overflow-wrap: anywhere; }
