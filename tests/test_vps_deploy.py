@@ -9,6 +9,7 @@ import unittest
 
 INSTALLER = Path(__file__).resolve().parents[1] / "deploy" / "vps" / "install.sh"
 TEMPLATE = Path(__file__).resolve().parents[1] / "deploy" / "vps" / "frps.toml.template"
+LISTENER_CHECK = Path(__file__).resolve().parents[1] / "deploy" / "vps" / "check-listeners.py"
 
 
 class PrivateConfigTests(unittest.TestCase):
@@ -49,6 +50,36 @@ class PrivateConfigTests(unittest.TestCase):
     def test_rejects_placeholder_and_weak_token(self):
         self.assertNotEqual(0, self.check_config(TEMPLATE.read_text(encoding="utf-8")))
         self.assertNotEqual(0, self.check_config(self.valid.replace("A" * 43, "short")))
+
+
+class ListenerTests(unittest.TestCase):
+    def check_listeners(self, kind, output):
+        return subprocess.run(
+            [sys.executable, str(LISTENER_CHECK), kind],
+            input=output,
+            text=True,
+            capture_output=True,
+        ).returncode
+
+    def test_control_accepts_public_wildcard_forms(self):
+        for address in ("*:8072", "0.0.0.0:8072", "[::]:8072"):
+            with self.subTest(address=address):
+                output = f"LISTEN 0 4096 {address} *:*\n"
+                self.assertEqual(0, self.check_listeners("control", output))
+
+    def test_control_requires_expected_listener(self):
+        self.assertNotEqual(0, self.check_listeners("control", ""))
+        self.assertNotEqual(0, self.check_listeners("control", "LISTEN 0 4096 127.0.0.1:8072 *:*\n"))
+        self.assertNotEqual(0, self.check_listeners("control", "LISTEN 0 4096 *:8071 *:*\n"))
+
+    def test_proxy_allows_absent_or_loopback_only(self):
+        self.assertEqual(0, self.check_listeners("proxy", ""))
+        self.assertEqual(0, self.check_listeners("proxy", "LISTEN 0 4096 127.0.0.1:8083 *:*\n"))
+        for address in ("*:8083", "0.0.0.0:8083", "[::]:8083", "[::1]:8083"):
+            with self.subTest(address=address):
+                self.assertNotEqual(
+                    0, self.check_listeners("proxy", f"LISTEN 0 4096 {address} *:*\n")
+                )
 
 
 if __name__ == "__main__":

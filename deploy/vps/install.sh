@@ -19,7 +19,7 @@ die() { printf '错误：%s\n' "$*" >&2; exit 1; }
 private_config=$1
 [[ -f $private_config && ! -L $private_config ]] || die '私有 frps.toml 不存在或是符号链接。'
 [[ -f $site && ! -L $site && -x $nginx && -x $source_frps ]] || die '站点、Nginx 或 frps 前提不满足。'
-for file in "$source_dir/ai-dashboard-frps.service" "$source_dir/view-dashboard.locations.conf" "$source_dir/offline.html"; do
+for file in "$source_dir/ai-dashboard-frps.service" "$source_dir/view-dashboard.locations.conf" "$source_dir/offline.html" "$source_dir/check-listeners.py"; do
     [[ -f $file ]] || die "缺少部署文件：$file"
 done
 for file in "$include_file" "$offline_file" "$frps_config" "$frps_binary" "$unit_file"; do
@@ -148,8 +148,8 @@ attempted_enable=1
 systemctl enable --now "$service"
 sleep 1
 systemctl is-active --quiet "$service" || die 'ai-dashboard-frps 未保持运行。'
-ss -H -ltn '( sport = :8072 )' | awk '$4 == "0.0.0.0:8072" { ok=1 } END { exit !ok }' || die '控制端口 8072 未监听。'
-ss -H -ltn '( sport = :8083 )' | awk '$4 != "127.0.0.1:8083" { bad=1 } END { exit bad }' || die '代理端口 8083 存在非回环监听。'
+ss -H -ltn '( sport = :8072 )' | python3 "$source_dir/check-listeners.py" control || die '控制端口 8072 未以预期地址监听。'
+ss -H -ltn '( sport = :8083 )' | python3 "$source_dir/check-listeners.py" proxy || die '代理端口 8083 存在非回环监听。'
 
 # The dedicated frps is running safely before switching the site to it.
 # No frpc connection is required at install time.
