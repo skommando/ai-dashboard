@@ -74,9 +74,39 @@ const server = http.createServer((req, res) => {
     await page.goto(`${url}#project/${encodeURIComponent(base.id)}/task/${encodeURIComponent(task.id)}`);
     await page.locator('.task-heading').waitFor();
     assert.equal(await page.locator('.task-heading').innerText(), '真实任务');
+    assert.doesNotMatch(await page.locator('.detail-content').innerText(), /时间未知/);
     await page.locator('.back-link').first().click();
     const detailTrack = await page.locator('.detail-progress').evaluate(node => getComputedStyle(node).color);
     assert.equal(detailTrack, reviewColor);
+    const incompleteTask = { ...task, status: 'todo', verified: false, evidence: [], acceptance: 'not_required' };
+    const pendingWave = { ...base.waves[0], acceptance: 'pending', tasks: [incompleteTask] };
+    const undefinedWave = { id: 'future', name: '未来阶段', defined: false, acceptance: 'not_required', tasks: [] };
+    const cases = [
+      { name: '阶段 0/1 待验收', project: { ...base, acceptance: 'not_required', waves: [pendingWave] }, ready: '0 / 1 Task|验收待确认', forbidden: /实施完成/ },
+      { name: '项目 0/1 待验收', project: { ...base, waves: [{ ...pendingWave, acceptance: 'not_required' }] }, ready: '0 / 1 Task|当前阶段', forbidden: /实施工作已完成/ },
+      { name: '阶段 1/1 待验收', project: { ...base, acceptance: 'not_required', waves: [{ ...base.waves[0], acceptance: 'pending' }] }, ready: '1 / 1 Task|实施完成 · 待验收', expected: /实施完成 · 待验收/ },
+      { name: '项目已规划 100% 待验收', project: base, ready: '1 / 1 Task|当前阶段', expected: /实施工作已完成/ },
+      { name: '已规划 100% 但未来待细化', project: { ...base, waves: [base.waves[0], undefinedWave] }, ready: '1 / 1 Task|未来阶段', forbidden: /实施工作已完成/ },
+    ];
+    for (const scenario of cases) {
+      projects = [scenario.project];
+      const reply = page.waitForResponse(response => response.url().endsWith('/api/v1/projects'));
+      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+      await reply;
+      await page.waitForFunction(marker => {
+        const [count, label] = marker.split('|');
+        const detail = document.querySelector('.detail-content')?.textContent || '';
+        return detail.includes(count) && detail.includes(label);
+      }, scenario.ready);
+      const detail = await page.locator('.detail-content').innerText();
+      if (scenario.forbidden) assert.doesNotMatch(detail, scenario.forbidden, scenario.name);
+      if (scenario.expected) assert.match(detail, scenario.expected, scenario.name);
+      assert.match(detail, /待验收|验收事项待确认/, scenario.name);
+    }
+    projects = [base, empty, blocked];
+    const resetReply = page.waitForResponse(response => response.url().endsWith('/api/v1/projects'));
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await resetReply;
     await page.getByRole('searchbox').fill('真实项目');
     offline = true;
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));

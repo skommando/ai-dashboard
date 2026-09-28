@@ -96,6 +96,10 @@ class AuthenticationChanged(Exception):
     pass
 
 
+def browser_date(value: str) -> str:
+    return datetime.fromisoformat(value).isoformat().replace("+00:00", "Z")
+
+
 def save_snapshot(db_path: str, project_id: str, token: str, key: str, snapshot: Snapshot) -> dict:
     normalized = snapshot.model_dump(mode="json", exclude_none=True)
     canonical = json.dumps(normalized, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
@@ -141,8 +145,15 @@ def project_views(db_path: str, project_id: str | None = None) -> list[dict]:
     views = []
     for row in rows:
         project = Project.model_validate(json.loads(row["snapshot_json"]))
-        views.append({**project.model_dump(mode="json", exclude_none=True),
+        visible = project.model_dump(mode="json", exclude_none=True)
+        for wave in visible["waves"]:
+            for task in wave["tasks"]:
+                if "updatedAt" in task:
+                    task["updatedAt"] = browser_date(task["updatedAt"])
+        for update in visible["updates"]:
+            update["at"] = browser_date(update["at"])
+        views.append({**visible,
                       "id": row["project_id"], "revision": row["revision"],
-                      "receivedAt": row["received_at"], "observedAt": row["observed_at"],
+                      "receivedAt": row["received_at"], "observedAt": browser_date(row["observed_at"]),
                       "progress": summarize(project)})
     return views

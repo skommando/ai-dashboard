@@ -107,6 +107,22 @@ class BackendContractTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_compact_iso_dates_are_browser_readable_without_changing_replay_hash(self):
+        payload = snapshot()
+        payload["observed_at"] = "20260928T080000Z"
+        payload["project"]["waves"][0]["tasks"][0]["updatedAt"] = "20260928T080100Z"
+        payload["project"]["updates"][0]["at"] = "20260928T080200Z"
+        first = self.send(payload, key="compact-dates")
+        self.assertEqual(first.status_code, 200, first.text)
+        view = self.view().json()["projects"][0]
+        self.assertEqual(view["observedAt"], "2026-09-28T08:00:00Z")
+        self.assertEqual(view["waves"][0]["tasks"][0]["updatedAt"], "2026-09-28T08:01:00Z")
+        self.assertEqual(view["updates"][0]["at"], "2026-09-28T08:02:00Z")
+        replay = self.send(payload, key="compact-dates")
+        self.assertEqual(replay.status_code, 200, replay.text)
+        self.assertEqual(replay.json()["revision"], 1)
+        self.assertTrue(replay.json()["replayed"])
+
     def test_cas_two_writers_and_replay_after_later_revision(self):
         def send_key(key):
             return self.send(key=key)

@@ -95,7 +95,7 @@
     const current = project.currentWave === wave.id;
     const complete = summary.total > 0 && summary.done === summary.total;
     const expanded = state.openWaves.get(project.id)?.has(wave.id);
-    const caption = wave.acceptance === 'pending' ? '实施完成 · 待验收' : current ? '当前阶段' : wave.defined === false ? '后续计划' : complete ? '已完成' : '尚未开始';
+    const caption = wave.acceptance === 'pending' ? complete ? '实施完成 · 待验收' : '验收待确认' : current ? '当前阶段' : wave.defined === false ? '后续计划' : complete ? '已完成' : '尚未开始';
     return `<details class="wave ${current ? 'current' : ''}" data-wave="${esc(wave.id)}" data-owner="${esc(project.id)}" ${expanded ? 'open' : ''}>
       <summary aria-label="Wave ${index + 1} ${esc(wave.name)} ${summary.total ? `${summary.done}/${summary.total}` : '待细化'}"><span class="wave-number ${current ? 'current' : complete ? 'complete' : ''} ${wave.defined === false ? 'undefined' : ''}">${complete && !current ? icon('check') : String(index + 1).padStart(2, '0')}</span><span class="wave-title"><strong>${esc(wave.name)}</strong><small>${caption}</small></span><span class="wave-count ${summary.total ? '' : 'text'}">${summary.total ? `${summary.done} / ${summary.total}` : '待细化'}</span><span class="wave-chevron">${icon('chevronRight')}</span></summary>
       <div class="wave-body">${wave.tasks.length ? wave.tasks.map(task => `<a class="task-row" data-task="${esc(task.id)}" data-status="${esc(task.status)}" href="${taskLink(project, task)}" aria-label="查看任务：${esc(task.title)}，${esc(statusLabels[task.status] || task.status)}">${symbol(task.status)}<span class="task-name">${esc(task.title)}${task.status === 'active' ? '<small class="task-hint">正在推进</small>' : task.status === 'waiting' ? '<small class="task-hint">等待确认</small>' : ''}</span><span class="task-code">${esc(task.code)}</span>${icon('chevronRight', 'task-chevron')}</a>`).join('') : '<div class="wave-empty">这个阶段还没有拆分 Task，暂不计入已规划范围。</div>'}</div>
@@ -105,15 +105,16 @@
   function projectMarkup(project) {
     const summary = summarize(project);
     const ongoing = project.waves.flatMap(w => w.tasks).find(t => ['active', 'waiting', 'blocked'].includes(t.status));
+    const completeScope = summary.total > 0 && summary.done === summary.total && summary.unplannedWaves === 0;
     const focus = ongoing ? `<a class="focus-note ${esc(project.status)}" href="${taskLink(project, ongoing)}"><span class="focus-label">${project.status === 'blocked' ? '需要你确认' : '当前在做'}${icon('arrowUpRight')}</span><strong>${esc(project.blocker || ongoing.title)}</strong></a>`
       : project.status === 'blocked' && project.blocker ? `<div class="focus-note blocked"><span class="focus-label">当前阻塞</span><strong>${esc(project.blocker)}</strong></div>`
-      : summary.pendingAcceptance ? '<div class="focus-note review"><span class="focus-label">等待阶段验收</span><strong>实施工作已完成，可以查看本阶段的交付效果。</strong></div>' : '';
+      : summary.pendingAcceptance ? `<div class="focus-note review"><span class="focus-label">验收事项待确认</span><strong>${completeScope ? '实施工作已完成，可以查看本阶段的交付效果。' : '请查看待确认的验收事项与当前任务。'}</strong></div>` : '';
     return `<div class="detail-nav"><span class="desktop-detail-label">项目详情</span><a class="back-link mobile-back" href="#">${icon('arrowLeft')}全部项目</a><span class="detail-nav-end">${icon('eye')}只读</span></div>
       <div class="detail-content"><div class="detail-project-heading"><span class="project-icon ${esc(project.color)}">${icon(project.glyph)}</span><div class="detail-title-wrap"><h2 tabindex="-1">${esc(project.name)}</h2><span class="category-label">${esc(project.category)}</span></div>${statusTag(project.status)}</div>
       <p class="detail-description">${esc(project.description)}</p>
       <div class="metric-top"><span>已规划范围</span><div class="metric-ratio"><span>${summary.total ? `${summary.done} / ${summary.total} Task` : '尚未登记任务'}</span><strong>${summary.percent === null ? '—' : `${summary.percent}<small>%</small>`}</strong></div></div>
       ${progress(summary, project.name, 'detail-progress', project.status)}
-      <div class="scope-note ${summary.pendingAcceptance ? 'pending' : ''}">${icon(summary.pendingAcceptance ? 'clock' : 'layers')}<span>${summary.pendingAcceptance ? `${summary.pendingAcceptance} 个验收事项待确认，实施完成度已计入。` : summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化，以上仅统计已规划 Task。` : project.status === 'complete' ? '全部任务已完成，交付检查已通过。' : '按 Task 等权计量，子项不增加任务总数。'}</span></div>
+      <div class="scope-note ${summary.pendingAcceptance ? 'pending' : ''}">${icon(summary.pendingAcceptance ? 'clock' : 'layers')}<span>${summary.pendingAcceptance ? `${summary.pendingAcceptance} 个验收事项待确认；Task 完成度按已验证任务计算。${summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化。` : ''}` : summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化，以上仅统计已规划 Task。` : project.status === 'complete' ? '全部任务已完成，交付检查已通过。' : '按 Task 等权计量，子项不增加任务总数。'}</span></div>
       ${focus}
       <div class="section-heading"><h3>阶段与任务</h3><span>${String(project.waves.length).padStart(2, '0')} WAVES</span></div>
       <div class="wave-list">${project.waves.length ? project.waves.map((wave, index) => waveMarkup(project, wave, index)).join('') : '<div class="wave-empty">尚未登记阶段，项目上报后会在这里显示。</div>'}</div>

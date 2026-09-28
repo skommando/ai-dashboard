@@ -40,7 +40,7 @@ python -m dashboard.server --role write --host 127.0.0.1 --port 8811
 
 Wave ID 在项目内唯一，Task ID 在整个项目内唯一；`currentWave` 为 `null` 或现有 Wave ID。`defined=false` 的 Wave 没有 Task。`done` Task 必须 `verified=true` 且至少有一条 evidence。项目标为 `complete` 时，必须有非零个有效 Task 且全部完成，没有待细化 Wave 或待处理的验收（`pending`/`rejected`）。`cancelled` Task 退出分母；子项不计数。`progress.done` 为已验证的 `done` Task 数，`progress.total` 为未取消 Task 数，`percent` 对 `done/total*100` 四舍五入，零分母时为 `null`。`unplannedWaves` 单独计算，`pendingAcceptance` 统计项目、Wave 和已完成 Task 的待验收项。实施进度、验收与上报新鲜度是独立信息。
 
-成功响应是 `{"project_id":"my-project","revision":1,"received_at":"...","replayed":false}`。`GET /api/v1/projects/{id}/revision` 使用同一项目 token，登记后未上报时返回 revision 0。读取端的 ProjectView 使用原始 `project` 业务字段及 `id`、`revision`、`receivedAt`、`observedAt`、`progress`；`receivedAt` 是服务接收时间，`observedAt` 是上报方观察时间。
+成功响应是 `{"project_id":"my-project","revision":1,"received_at":"...","replayed":false}`。`GET /api/v1/projects/{id}/revision` 使用同一项目 token，登记后未上报时返回 revision 0。读取端的 ProjectView 使用原始 `project` 业务字段及 `id`、`revision`、`receivedAt`、`observedAt`、`progress`；`receivedAt` 是服务接收时间，`observedAt` 是上报方观察时间。读取视图会将已验证的 `observedAt`、Task `updatedAt` 和更新记录 `at` 转为浏览器可解析的扩展 ISO 格式；存储快照与幂等请求哈希不受此显示转换影响。
 
 ## 稳定上报与冲突处理
 

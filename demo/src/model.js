@@ -7,7 +7,7 @@
     return {
       done: completed.length,
       total: tasks.length,
-      percent: tasks.length ? Math.round(completed.length / tasks.length * 100) : null,
+      percent: tasks.length ? Math.floor((2 * completed.length * 100 + tasks.length) / (2 * tasks.length)) : null,
       unplannedWaves: waves.filter(wave => wave.defined === false).length,
       pendingAcceptance: (project.acceptance === 'pending' ? 1 : 0)
         + waves.filter(wave => wave.acceptance === 'pending').length

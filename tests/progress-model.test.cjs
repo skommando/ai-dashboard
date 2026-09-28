@@ -21,6 +21,11 @@ test('不同大小的 Wave 直接汇总 Task：2/10 = 20%，不平均为 50%', (
   assert.equal(value.percent, 20);
 });
 
+test('23/40 的半数边界与后端整数计量一致，为 58%', () => {
+  const tasks = Array.from({ length: 40 }, (_, index) => index < 23 ? done(`task-${index}`) : todo(`task-${index}`));
+  assert.equal(summarize(project([{ tasks }])).percent, 58);
+});
+
 test('子项完成不替代父 Task 验证，也不增加分母', () => {
   const value = summarize(project([{ tasks: [
     done('a'), { ...todo('b'), children: [done('b1'), done('b2'), done('b3')] },
