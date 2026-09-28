@@ -1,10 +1,11 @@
 {
-  "checkedAt": "2026-09-28T07:43:27.276Z",
+  "checkedAt": "2026-09-28T07:49:10.052Z",
   "engine": "Playwright Chromium",
   "checks": [
     "desktop 1440: no horizontal overflow",
     "Desktop overview renders six projects and 12/20 progress",
     "Search reaches child text, safely handles markup, and clears empty state",
+    "Search from a deep Task route updates URL and title; reload keeps the displayed project",
     "mobile 390 home: no horizontal overflow",
     "mobile 390 project: no horizontal overflow",
     "mobile 390 task: no horizontal overflow",

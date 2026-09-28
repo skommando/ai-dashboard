@@ -211,10 +211,11 @@
     state.query = event.target.value;
     const visible = visibleProjects();
     if (visible.length && !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
-    state.taskId = null;
-    if (state.view === 'task') state.view = 'project';
-    document.body.dataset.view = state.view;
-    renderList(); renderDetail();
+    if (state.view !== 'home') {
+      const next = visible.length ? projectLink(activeProject()) : '#';
+      if (location.hash !== next) { location.hash = next; return; }
+    }
+    applyRoute();
   });
   document.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {

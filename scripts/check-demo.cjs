@@ -44,6 +44,15 @@ async function noOverflow(page, label) {
     assert.equal(await page.locator('.project-row').count(), 6);
     checks.push('Search reaches child text, safely handles markup, and clears empty state');
 
+    await page.goto(`${demoUrl}#project/knowledge/task/w2-t5`);
+    await page.getByRole('searchbox').fill('账单');
+    await page.waitForFunction(() => document.querySelector('.detail-project-heading h2')?.textContent === '账单归档');
+    assert.equal(await page.evaluate(() => location.hash), '#project/billing');
+    assert.equal(await page.title(), '账单归档 · 进度簿');
+    await page.reload();
+    assert.equal(await page.locator('.detail-project-heading h2').innerText(), '账单归档');
+    checks.push('Search from a deep Task route updates URL and title; reload keeps the displayed project');
+
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
     watch(mobile);
     await mobile.goto(demoUrl);
