@@ -13,6 +13,7 @@ const task = { id: 'item/one', code: 'API-01', title: '真实任务', status: 'd
 const base = { id: 'project/one', name: '真实项目 <script>alert(1)</script>', shortName: '真实', description: '描述', summary: '正在检查', status: 'review', acceptance: 'pending', category: '工具', glyph: 'book', color: 'sage', currentWave: 'phase/api', waves: [{ id: 'phase/api', name: '接口', defined: true, acceptance: 'not_required', tasks: [task] }], updates: [{ at, tone: 'done', text: '已通过', detail: 'API' }], revision: 1, receivedAt: at, observedAt: at, progress: { done: 1, total: 1, percent: 100, unplannedWaves: 0, pendingAcceptance: 1 } };
 const empty = { ...base, id: 'empty', name: '没有阶段的长项目名称用于手机布局验证', shortName: '无阶段', status: 'blocked', currentWave: null, waves: [], progress: { done: 0, total: 0, percent: null, unplannedWaves: 0, pendingAcceptance: 1 } };
 const blocked = { ...base, id: 'blocked', name: '阻塞项目', shortName: '阻塞', status: 'blocked', acceptance: 'not_required', progress: { done: 1, total: 1, percent: 100, unplannedWaves: 0, pendingAcceptance: 0 } };
+const layout = { ...base, id: 'layout', name: '项目进度看板', shortName: '项目进度看板', summary: '本机与公网查看已上线，上报、鉴权、重启和浏览器检查通过。', status: 'complete', acceptance: 'not_required', receivedAt: '2026-09-28T09:57:00Z', waves: [{ ...base.waves[0], tasks: Array.from({ length: 4 }, (_, index) => ({ ...task, id: `layout-${index}`, acceptance: 'not_required' })) }], progress: { done: 4, total: 4, percent: 100, unplannedWaves: 0, pendingAcceptance: 0 } };
 let projects = [base, empty, blocked];
 let offline = false;
 let apiRequests = 0;
@@ -139,7 +140,7 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
     await page.locator('.project-row').waitFor({ state: 'detached' });
     assert.match(await page.locator('#project-list').innerText(), /尚无项目/);
-    const mobile = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+    const mobile = await browser.newPage({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, timezoneId: 'Asia/Shanghai' });
     mobile.on('pageerror', error => errors.push(error.message));
     projects = [base, empty, blocked];
     await mobile.goto(url);
@@ -155,17 +156,51 @@ const server = http.createServer((req, res) => {
     assert.ok(Math.abs(await mobile.evaluate(() => window.scrollY) - scrollBefore) <= 1);
     await mobile.setViewportSize({ width: 375, height: 812 });
     await mobile.evaluate(() => window.scrollTo(0, 0));
-    const width = await mobile.evaluate(() => ({ page: document.documentElement.scrollWidth, viewport: innerWidth }));
-    assert.ok(width.page <= width.viewport + 1, JSON.stringify(width));
+    const width = await mobile.evaluate(() => ({ page: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth, visual: visualViewport.width, layout: innerWidth }));
+    assert.ok(width.page <= 376 && width.viewport === 375 && Math.abs(width.visual - 375) <= 1, JSON.stringify(width));
     await mobile.screenshot({ path: path.join(previewDir, 'live-mobile.png') });
     await mobile.locator('[data-project="empty"]').click();
     await mobile.locator('.detail-project-heading h2').waitFor();
     assert.equal(await mobile.locator('details[data-wave]').count(), 0);
     assert.match(await mobile.locator('.wave-list').innerText(), /尚未登记阶段/);
     await mobile.screenshot({ path: path.join(previewDir, 'live-mobile-empty-wave.png') });
-    assert.equal(peak, 1);
+    const baselinePeak = peak;
+    assert.equal(baselinePeak, 1);
+    projects = [layout];
+    for (const viewportWidth of [375, 390, 430]) {
+      await mobile.setViewportSize({ width: viewportWidth, height: 812 });
+      await mobile.goto(url);
+      await mobile.locator('[data-project="layout"]').waitFor();
+      assert.equal(await mobile.locator('.row-updated').innerText(), '9/28 17:57');
+      const geometry = await mobile.evaluate(() => {
+        const row = document.querySelector('.project-row');
+        const list = document.querySelector('.project-list');
+        const summary = row.querySelector('.row-summary');
+        return { page: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth,
+          visual: visualViewport.width, layout: innerWidth, rowRight: row.getBoundingClientRect().right,
+          listRight: list.getBoundingClientRect().right, summaryWidth: summary.clientWidth,
+          summaryScrollWidth: summary.scrollWidth, overflow: getComputedStyle(summary).textOverflow };
+      });
+      assert.equal(geometry.viewport, viewportWidth, JSON.stringify(geometry));
+      assert.ok(Math.abs(geometry.visual - viewportWidth) <= 1, JSON.stringify(geometry));
+      assert.ok(geometry.page <= viewportWidth + 1, JSON.stringify(geometry));
+      assert.ok(geometry.rowRight <= geometry.listRight + 1, JSON.stringify(geometry));
+      assert.equal(geometry.overflow, 'ellipsis');
+      if (viewportWidth <= 390) assert.ok(geometry.summaryScrollWidth > geometry.summaryWidth, JSON.stringify(geometry));
+      if (viewportWidth === 375) await mobile.screenshot({ path: path.join(previewDir, 'live-mobile-layout-375.png') });
+    }
+    await mobile.close();
+    await page.goto(url);
+    await page.locator('[data-project="layout"]').waitFor();
+    const desktopGeometry = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth,
+      rowRight: document.querySelector('.project-row').getBoundingClientRect().right,
+      listRight: document.querySelector('.project-list').getBoundingClientRect().right,
+    }));
+    assert.ok(desktopGeometry.page <= desktopGeometry.viewport + 1, JSON.stringify(desktopGeometry));
+    assert.ok(desktopGeometry.rowRight <= desktopGeometry.listRight + 1, JSON.stringify(desktopGeometry));
     assert.deepEqual(errors, []);
-    writeFileSync(path.join(previewDir, 'verification.json'), JSON.stringify({ checkedAt: new Date().toISOString(), engine: 'Playwright Chromium', apiRequests, peakConcurrency: peak, mobileWidth: width, realIPhoneTested: false }, null, 2));
-    console.log(`Live browser checks passed; ${apiRequests} API requests, peak concurrency ${peak}, mobile width ${width.page}/${width.viewport}`);
+    writeFileSync(path.join(previewDir, 'verification.json'), JSON.stringify({ checkedAt: new Date().toISOString(), engine: 'Playwright Chromium', apiRequests, baselinePeakConcurrency: baselinePeak, totalPeakConcurrency: peak, mobileWidth: width, realIPhoneTested: false }, null, 2));
+    console.log(`Live browser checks passed; ${apiRequests} API requests, baseline peak concurrency ${baselinePeak}, mobile width ${width.page}/${width.viewport}`);
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

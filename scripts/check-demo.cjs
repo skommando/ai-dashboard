@@ -15,11 +15,21 @@ function watch(page) {
   page.on('request', request => { if (/^https?:/i.test(request.url())) externalRequests.push(request.url()); });
 }
 async function noOverflow(page, label) {
-  const result = await page.evaluate(() => ({
-    viewport: innerWidth, width: document.documentElement.scrollWidth,
-    offenders: [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > innerWidth + 1 && e.getBoundingClientRect().width > 0).map(e => `${e.tagName}.${e.className}`).slice(0, 8),
-  }));
-  assert.ok(result.width <= result.viewport + 1, `${label}: ${JSON.stringify(result)}`);
+  const configuredWidth = page.viewportSize().width;
+  const result = await page.evaluate(() => {
+    const row = [...document.querySelectorAll('.project-row')].find(element => element.getBoundingClientRect().width > 0);
+    return {
+      layout: innerWidth, viewport: document.documentElement.clientWidth,
+      visual: visualViewport?.width, width: document.documentElement.scrollWidth,
+      listRight: row?.closest('.project-list')?.getBoundingClientRect().right,
+      rowRight: row?.getBoundingClientRect().right,
+      offenders: [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > document.documentElement.clientWidth + 1 && e.getBoundingClientRect().width > 0).map(e => `${e.tagName}.${e.className}`).slice(0, 8),
+    };
+  });
+  assert.ok(Math.abs(result.viewport - configuredWidth) <= 1, `${label}: ${JSON.stringify(result)}`);
+  assert.ok(Math.abs(result.visual - configuredWidth) <= 1, `${label}: ${JSON.stringify(result)}`);
+  assert.ok(result.width <= configuredWidth + 1, `${label}: ${JSON.stringify(result)}`);
+  if (result.rowRight !== undefined) assert.ok(result.rowRight <= result.listRight + 1, `${label}: ${JSON.stringify(result)}`);
   checks.push(`${label}: no horizontal overflow`);
 }
 (async () => {

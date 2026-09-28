@@ -1,11 +1,14 @@
 {
-  "checkedAt": "2026-09-28T09:42:18.302Z",
+  "checkedAt": "2026-09-28T10:05:40.467Z",
   "engine": "Playwright Chromium",
-  "apiRequests": 17,
-  "peakConcurrency": 1,
+  "apiRequests": 22,
+  "baselinePeakConcurrency": 1,
+  "totalPeakConcurrency": 2,
   "mobileWidth": {
     "page": 375,
-    "viewport": 375
+    "viewport": 375,
+    "visual": 375,
+    "layout": 375
   },
   "realIPhoneTested": false
 }
