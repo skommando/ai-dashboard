@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F5F6F3">
+  <meta name="description" content="个人项目进度看板，只读交互演示。">
+  <title>进度簿 · 项目总览</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23537565'/%3E%3Cpath d='M12 28V12M20 28V17M28 28V22' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <style>/* INLINE_STYLES */</style>
+</head>
+<body data-view="home">
+  <a class="skip-link" href="#main-content" data-action="skip">跳到主要内容</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="工作台导航">
+      <a class="brand" href="#" aria-label="进度簿首页"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>进度簿<small>个人工作台</small></span></a>
+      <nav class="primary-nav" aria-label="查看范围" id="primary-nav"></nav>
+      <div class="side-section-label">项目<span id="side-project-count">06</span></div>
+      <nav class="side-projects" aria-label="项目快捷入口" id="side-projects"></nav>
+      <div class="sidebar-bottom">
+        <div class="source-machine"><span data-icon="monitor"></span><div>Windows 本机<small>个人工作空间</small></div><span class="source-dot" aria-hidden="true"></span></div>
+        <div class="sidebar-foot"><span data-icon="eye"></span>只读查看<span class="foot-version">DEMO / 01</span></div>
+      </div>
+    </aside>
+    <main class="main" id="main-content" tabindex="-1">
+      <header class="page-header">
+        <div class="page-heading">
+          <div class="eyebrow"><span class="mini-brand" aria-hidden="true"><i></i><i></i><i></i></span><span class="desktop-kicker">工作空间</span><span class="mobile-kicker">进度簿</span><span class="kicker-slash">/</span>项目</div>
+          <h1>项目总览<span class="heading-count" id="heading-count">6</span></h1>
+          <p class="page-subtitle"><span id="date-label"></span><span class="sub-dot">·</span><span id="overview-summary"></span></p>
+        </div>
+        <div class="header-actions">
+          <details class="demo-menu" id="demo-menu">
+            <summary><span class="demo-mark" aria-hidden="true"></span><span>演示数据</span><span data-icon="chevronDown"></span></summary>
+            <div class="demo-options"><p>预览场景</p><button type="button" data-scenario="online"><span data-icon="sun"></span>正常显示<span class="option-check" data-check="online">✓</span></button><button type="button" data-scenario="offline"><span data-icon="wifiOff"></span>本机离线<span class="option-check" data-check="offline"></span></button><small>此处仅切换演示场景，<br>不会更新任何项目状态。</small></div>
+          </details>
+          <button class="icon-button rules-button" type="button" data-action="rules" aria-label="查看进度计算方式" title="进度计算方式"><span data-icon="help"></span></button>
+        </div>
+      </header>
+      <div class="offline-banner" id="offline-banner" hidden role="status"><span data-icon="wifiOff"></span><div><strong>暂时无法连接本机</strong><span>以下保留最后一次记录 · 今天 14:38。请确认电脑在线后再查看。</span></div><span class="offline-tag">离线示例</span></div>
+      <div class="workspace">
+        <section class="project-panel" aria-label="项目列表">
+          <div class="search-wrap"><span data-icon="search"></span><input id="project-search" type="search" placeholder="搜索项目或任务" aria-label="搜索项目或任务" autocomplete="off"><kbd aria-hidden="true">Ctrl K</kbd></div>
+          <div class="filters" id="filters" role="group" aria-label="筛选项目"></div>
+          <div class="list-caption"><span id="list-caption"></span><span>已规划范围</span></div>
+          <div class="project-scroll" id="project-scroll"><div id="project-list" class="project-list" role="list"></div></div>
+          <div class="list-footer"><span class="snapshot-dot" aria-hidden="true"></span><span id="snapshot-label">示例快照 · 今天 14:38</span><span class="read-only-label"><span data-icon="eye"></span>只读</span></div>
+        </section>
+        <aside class="detail-panel" id="detail-panel" aria-label="项目详情" tabindex="-1"></aside>
+      </div>
+    </main>
+  </div>
+  <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-title">
+    <div class="dialog-top"><span class="eyebrow">计量口径</span><button class="icon-button" type="button" data-action="close-rules" aria-label="关闭计算说明"><span data-icon="close"></span></button></div>
+    <h2 id="rules-title">每个 Task，算一步。</h2>
+    <p class="dialog-intro">百分比表示已规划任务的实施完成比例。</p>
+    <div class="formula"><span><strong>12</strong><small>已完成 Task</small></span><b>÷</b><span><strong>20</strong><small>已规划 Task</small></span><b>=</b><span class="formula-result"><strong>60<em>%</em></strong><small>范围内进度</small></span></div>
+    <ul class="rules-list"><li><strong>通过检查才计入完成</strong><span>人工验收独立标记，待验收不抵消已完成的实施工作。</span></li><li><strong>子项不增加 Task 数量</strong><span>Wave 用于分组，子项用于展示细节；项目比例直接汇总 Task。</span></li><li><strong>未拆分的计划明确标注</strong><span>未来 Wave 待细化时，不将已有任务的 100% 当成全项目完成。</span></li></ul>
+    <div class="dialog-foot">本页为虚构演示数据，不代表本机实时状态。</div>
+  </dialog>
+  <noscript>/* INLINE_STATIC */</noscript>
+  <script>/* INLINE_MODEL */</script>
+  <script>/* INLINE_DATA */</script>
+  <script>/* INLINE_APP */</script>
+</body>
+</html>

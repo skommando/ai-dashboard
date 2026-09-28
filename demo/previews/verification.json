@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-09-28T07:43:27.276Z",
+  "engine": "Playwright Chromium",
+  "checks": [
+    "desktop 1440: no horizontal overflow",
+    "Desktop overview renders six projects and 12/20 progress",
+    "Search reaches child text, safely handles markup, and clears empty state",
+    "mobile 390 home: no horizontal overflow",
+    "mobile 390 project: no horizontal overflow",
+    "mobile 390 task: no horizontal overflow",
+    "Mobile project → Wave → Task → project → home navigation works",
+    "Acceptance is separate from 100% implementation; filter survives return",
+    "Zero-task project shows unknown progress and outlined Waves",
+    "mobile 390 offline: no horizontal overflow",
+    "Progress explanation and offline scenario work",
+    "width 375 home: no horizontal overflow",
+    "width 375 long project name: no horizontal overflow",
+    "width 430 home: no horizontal overflow",
+    "width 430 long project name: no horizontal overflow",
+    "width 1001 home: no horizontal overflow",
+    "width 1001 long project name: no horizontal overflow",
+    "Standalone mobile preview embeds the full interactive page",
+    "JavaScript-disabled mobile preview: no horizontal overflow",
+    "File viewers without JavaScript can still read the project overview",
+    "No JavaScript errors or external HTTP resources"
+  ],
+  "errors": [],
+  "externalRequests": [],
+  "realIPhoneTested": false
+}

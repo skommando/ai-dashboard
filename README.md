@@ -11,19 +11,34 @@
 
 ## 当前状态
 
-2026-09-28：完成仓库初始化、同类项目调研及第一轮需求对齐。已确认只读查看、项目主动上报、按 Task 等权计量和本地离线展示边界；设计草案待整体审阅。
+2026-09-28：已确认只读查看、项目主动上报、按 Task 等权计量和本地离线展示边界，并完成第一版前端 demo。
 
-后端采用 Python + SQLite；设计草案建议 FastAPI、Vue 3 + TypeScript，以及用于评审的独立 HTML demo。计划沿用现有 VPS + frp + HTTPS/Basic Auth 访问方式。当前尚无产品实现或可执行的启动、测试、构建命令，后续实现时补充真实入口。
+当前 demo 使用原生 HTML/CSS/JavaScript 与静态样例数据。后续后端采用 Python + SQLite，正式前端建议 Vue 3 + TypeScript；远程访问计划沿用 VPS + frp + HTTPS/Basic Auth。后端、真实数据接入与部署尚未实现。
+
+## 前端 demo
+
+- [完整 demo](demo/index.html)：可独立打开，自动适配桌面与手机。
+- [手机预览](demo/mobile.html)：可独立转发，桌面可切换手机宽度。
+- [体验说明与命令](demo/README.md)。
+
+```powershell
+node scripts/build-demo.cjs
+node --test tests/progress-model.test.cjs
+python -m http.server 8765 --bind 127.0.0.1 --directory demo
+```
+
+浏览器打开 `http://127.0.0.1:8765/`。也可直接打开 HTML，无需运行服务。
 
 ## 文档入口
 
 - [项目协作约定](AGENTS.md)：工作范围、授权、验证、Git 与协作规则。
 - [AI 工作台简要调研](docs/research/2026-09-28-ai-workbenches.md)：六个代表项目、与本项目的差异、iPhone 访问可行性与后续设计建议。
-- [进度看板设计草案](docs/superpowers/specs/2026-09-28-progress-dashboard-design.md)：已确认的计量口径、只读架构与桌面/手机 demo 方案。
+- [进度看板设计](docs/superpowers/specs/2026-09-28-progress-dashboard-design.md)：已确认的计量口径、只读架构与桌面/手机 demo 方案。
+- [demo 执行计划](docs/superpowers/plans/2026-09-28-frontend-demo.md)与[验证记录](docs/verification/2026-09-28-frontend-demo.md)。
 - [本地 Codex 最小验证](docs/research/2026-09-28-codex-local-probe.md)：不使用 SDK 的实际调用结果与尚未验证的边界。
 
 ## 下一步
 
-整体核对设计草案后，制作可在桌面和 iPhone 体验的只读 HTML demo。后端协议和真实项目接入在后续实施阶段完成。
+体验 HTML demo 并反馈视觉和使用体验；后端协议和真实项目接入在后续实施阶段完成。
 
 当前阶段不包含 AI 编码执行器、聊天平台、多用户系统或原生 iOS 应用。远程控制本地 Codex 仅完成独立连接的最小验证，未纳入看板首版。

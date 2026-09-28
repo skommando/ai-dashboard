@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>进度簿 · 手机预览</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#e9ede7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:#60735b}.preview{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;gap:48px}.note{max-width:180px}.note h1{font-size:22px;font-weight:550;color:#304b2d;letter-spacing:-.02em}.note p{font-size:12px;line-height:1.9}.note label{display:block;font-size:11px;margin:20px 0 8px}select{padding:9px 12px;border:1px solid #c6d1bf;background:#f7faf2;color:#526d47;border-radius:5px;font:12px inherit}iframe{display:block;width:390px;height:844px;max-height:calc(100vh - 64px);border:1px solid #c9d3c0;border-radius:20px;background:#f5f6f3;box-shadow:0 15px 45px #334a2520}.caption{font-size:10px;color:#8d9e7f;margin-top:21px}@media(max-width:600px){.preview{padding:0;display:block}.note{display:none}iframe{width:100%!important;height:100vh;height:100dvh;max-height:none;border:0;border-radius:0;box-shadow:none}}</style></head><body><main class="preview"><div class="note"><h1>进度簿</h1><p>手机端交互预览。<br>项目、阶段和任务，<br>按阅读顺序逐层展开。</p><label for="preview-width">预览宽度</label><select id="preview-width"><option value="375">375 px · 窄屏</option><option value="390" selected>390 px · 标准</option><option value="430">430 px · 大屏</option></select><p class="caption">同一套页面 · 演示数据<br>在手机上打开时自动铺满屏幕。</p></div><iframe id="phone" title="手机端进度看板" srcdoc="<!doctype html>
+<html lang=&quot;zh-CN&quot;>
+<head>
+  <meta charset=&quot;UTF-8&quot;>
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1, viewport-fit=cover&quot;>
+  <meta name=&quot;theme-color&quot; content=&quot;#F5F6F3&quot;>
+  <meta name=&quot;description&quot; content=&quot;个人项目进度看板，只读交互演示。&quot;>
+  <title>进度簿 · 项目总览</title>
+  <link rel=&quot;icon&quot; href=&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23537565'/%3E%3Cpath d='M12 28V12M20 28V17M28 28V22' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E&quot;>
+  <style>:root {
+  color-scheme: light;
+  --canvas: #f5f6f3; --surface: #fff; --sidebar: #eef0eb;
+  --ink: #202b27; --muted: #69756f; --faint: #8a938c; --line: #e3e7e1;
+  --accent: #537565; --accent-dark: #365646; --accent-soft: #edf3ee;
+  --amber: #986124; --amber-soft: #faf2e5; --red: #a45446; --red-soft: #faeeeb;
+  --blue: #557386; --mono: &quot;SFMono-Regular&quot;, Consolas, &quot;Liberation Mono&quot;, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;PingFang SC&quot;, &quot;Microsoft YaHei&quot;, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: var(--sans); font-size: 14px; color: var(--ink); background: var(--canvas); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; }
+button, a, summary { -webkit-tap-highlight-color: transparent; }
+button { color: inherit; cursor: pointer; }
+button, input { border-radius: 0; }
+button { border: 0; background: none; }
+a { color: inherit; text-decoration: none; }
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+button:disabled { cursor: default; }
+[hidden] { display: none !important; }
+svg { display: block; width: 18px; height: 18px; flex: 0 0 auto; stroke-width: 1.65; }
+[data-icon] { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.app-shell { display: flex; height: 100vh; height: 100dvh; min-height: 620px; }
+.skip-link { position: fixed; left: 16px; top: -100px; background: white; padding: 12px 18px; z-index: 100; border: 1px solid var(--accent); border-radius: 6px; }
+.skip-link:focus { top: 12px; }
+.sidebar { flex: 0 0 190px; display: flex; flex-direction: column; background: var(--sidebar); border-right: 1px solid #e0e5dd; padding: 31px 14px 0; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 0 12px 36px; font-size: 21px; font-weight: 650; letter-spacing: .03em; }
+.brand small { display: block; margin-top: 4px; font-size: 10px; letter-spacing: .1em; font-weight: 450; color: var(--muted); }
+.brand-mark { width: 35px; height: 39px; background: var(--accent); border-radius: 9px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; padding-bottom: 9px; transform: rotate(-4deg); }
+.brand-mark i { width: 3px; height: 21px; border-radius: 2px; background: white; }
+.brand-mark i:nth-child(2) { height: 15px; opacity: .8; }
+.brand-mark i:nth-child(3) { height: 9px; opacity: .6; }
+.primary-nav { display: grid; gap: 5px; }
+.nav-button { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 12px; min-height: 43px; color: #647168; font-size: 13px; text-align: left; border-radius: 7px; }
+.nav-button:hover { background: #e6ebe3; }
+.nav-button.active { background: #dfe8df; color: var(--accent-dark); font-weight: 600; }
+.nav-button svg { width: 17px; height: 17px; }
+.nav-count { margin-left: auto; font: 11px var(--mono); color: #788379; }
+.nav-button.active .nav-count { color: var(--accent-dark); }
+.side-section-label { display: flex; justify-content: space-between; padding: 30px 12px 12px; color: #889286; font-size: 10px; letter-spacing: .12em; }
+.side-section-label span { font: 10px var(--mono); }
+.side-projects { display: grid; gap: 2px; }
+.side-project { min-height: 37px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: #6b756c; font-size: 12px; border-radius: 6px; }
+.side-project:hover, .side-project.selected { color: var(--ink); background: #e7ebe3; }
+.tiny-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); flex: 0 0 auto; }
+.tiny-dot.active { background: var(--accent); box-shadow: 0 0 0 3px #dfe8de; }
+.tiny-dot.blocked { background: var(--red); }
+.tiny-dot.review { background: var(--amber); }
+.tiny-dot.complete { background: #89988b; }
+.sidebar-bottom { margin-top: auto; padding-top: 28px; }
+.source-machine { display: flex; align-items: center; gap: 8px; margin: 0 5px 20px; color: #68766a; font-size: 11px; }
+.source-machine svg { width: 19px; height: 19px; }
+.source-machine small { display: block; font-size: 10px; margin-top: 5px; color: #90998f; }
+.source-dot { margin-left: auto; width: 5px; height: 5px; border-radius: 50%; background: #81917f; }
+.sidebar-foot { border-top: 1px solid #dce2d7; padding: 17px 3px 21px; color: #8a9489; font-size: 10px; display: flex; align-items: center; gap: 6px; }
+.sidebar-foot svg { width: 13px; height: 13px; }
+.foot-version { margin-left: auto; font: 9px var(--mono); }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 0 30px 22px; }
+.main:focus { outline: none; }
+.page-header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 31px 0 26px; }
+.eyebrow { display: flex; align-items: center; gap: 9px; color: #7d887e; font-size: 10px; letter-spacing: .08em; line-height: 1.5; }
+.kicker-slash { color: #b2bbb1; }
+.mini-brand, .mobile-kicker { display: none; }
+.page-heading h1 { font-size: 27px; line-height: 1.25; font-weight: 600; margin: 11px 0 9px; letter-spacing: -.035em; display: flex; align-items: center; gap: 12px; }
+.heading-count { font: 12px var(--mono); color: #7c887d; padding: 4px 7px; border: 1px solid #d9e0d6; border-radius: 5px; letter-spacing: 0; }
+.page-subtitle { display: flex; gap: 9px; align-items: center; color: var(--muted); font-size: 11px; margin: 0; line-height: 1.5; }
+.sub-dot { color: #aab3a7; }
+.header-actions { display: flex; align-items: center; gap: 11px; align-self: flex-start; padding-top: 21px; }
+.icon-button { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 7px; flex: 0 0 auto; }
+.icon-button:hover { background: #e8ede5; color: var(--accent-dark); }
+.demo-menu { position: relative; z-index: 20; }
+.demo-menu > summary { display: flex; align-items: center; gap: 7px; height: 37px; padding: 0 11px; border: 1px solid #dae1d6; border-radius: 6px; cursor: pointer; font-size: 11px; color: #707c70; list-style: none; background: #f9faf7; }
+.demo-menu > summary::-webkit-details-marker { display: none; }
+.demo-menu > summary svg { width: 12px; height: 12px; }
+.demo-mark { width: 5px; height: 5px; background: #8a9a83; border-radius: 50%; }
+.demo-options { position: absolute; top: 44px; right: 0; width: 208px; padding: 8px; background: white; border: 1px solid var(--line); border-radius: 9px; box-shadow: 0 8px 30px #24392a10; }
+.demo-options p { font-size: 10px; color: var(--faint); margin: 6px 8px 9px; }
+.demo-options button { width: 100%; display: flex; align-items: center; gap: 9px; padding: 12px 9px; border-radius: 5px; font-size: 12px; text-align: left; }
+.demo-options button:hover { background: var(--accent-soft); }
+.demo-options button svg { width: 15px; height: 15px; color: var(--muted); }
+.option-check { margin-left: auto; color: var(--accent); }
+.demo-options small { display: block; color: var(--faint); font-size: 10px; line-height: 1.7; border-top: 1px solid var(--line); margin-top: 5px; padding: 10px 8px 5px; }
+.offline-banner { flex: 0 0 auto; display: flex; align-items: center; gap: 12px; background: #f6eee5; border: 1px solid #e8d9c8; border-radius: 7px; color: #886344; padding: 12px 15px; margin: -8px 0 18px; }
+.offline-banner strong { display: block; font-size: 12px; font-weight: 550; margin-bottom: 4px; }
+.offline-banner div > span { font-size: 11px; line-height: 1.6; display: block; }
+.offline-tag { margin-left: auto; font-size: 10px; flex: 0 0 auto; }
+.workspace { display: grid; grid-template-columns: minmax(350px, 1fr) minmax(355px, 424px); gap: 26px; min-height: 0; flex: 1; }
+.project-panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.search-wrap { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid var(--line); border-radius: 7px; padding: 0 12px; height: 43px; flex: 0 0 auto; }
+.search-wrap:focus-within { border-color: #92a694; box-shadow: 0 0 0 2px #5375650c; }
+.search-wrap svg { color: #919c91; width: 17px; height: 17px; }
+.search-wrap input { flex: 1; width: 0; min-width: 0; border: 0; outline: none; font-size: 12px; height: 40px; background: transparent; color: var(--ink); }
+.search-wrap input::placeholder { color: #929d93; opacity: 1; }
+.search-wrap input:focus-visible { outline: none; }
+.search-wrap kbd { font: 9px var(--mono); color: #a0aaa0; border: 1px solid #e5e9e1; border-radius: 3px; padding: 3px 4px; white-space: nowrap; }
+.filters { display: flex; border-bottom: 1px solid var(--line); gap: 22px; margin-top: 14px; flex: 0 0 auto; }
+.filter-button { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 1px 2px; color: #7a867b; font-size: 11px; position: relative; white-space: nowrap; }
+.filter-button span { font: 10px var(--mono); opacity: .7; }
+.filter-button.active { color: var(--accent-dark); font-weight: 600; }
+.filter-button.active::after { content: ''; position: absolute; bottom: -1px; height: 2px; left: 0; right: 0; background: var(--accent); border-radius: 3px; }
+.list-caption { color: #95a092; font-size: 10px; display: flex; align-items: center; justify-content: space-between; padding: 18px 2px 11px; flex: 0 0 auto; }
+.project-scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: #d8dfd3 transparent; min-height: 0; padding: 1px 3px 8px 1px; }
+.project-list { display: grid; gap: 9px; }
+.project-row { position: relative; display: block; width: 100%; border: 1px solid #e3e7df; background: #fbfcf9; padding: 17px 16px 16px; border-radius: 9px; text-align: left; transition: border-color .15s, background .15s; }
+.project-row:hover { background: white; border-color: #bcccbc; }
+.project-row.selected { background: white; border-color: #9caf9d; box-shadow: 0 2px 7px #364b3406; }
+.project-row.selected::before { content: ''; position: absolute; left: -1px; top: 22px; bottom: 22px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.row-top { display: flex; align-items: center; gap: 11px; min-width: 0; }
+.project-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; flex: 0 0 auto; color: #65816b; background: #eaf0e6; }
+.project-icon svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.project-icon.sand { color: #9c8154; background: #f1eadd; }
+.project-icon.plum { color: #88788b; background: #eee8ed; }
+.project-icon.blue { color: #6d8791; background: #e7eef0; }
+.project-icon.stone { color: #7f897e; background: #ecede7; }
+.row-identity { min-width: 0; flex: 1; }
+.row-identity strong { font-size: 14px; font-weight: 600; line-height: 1.5; display: block; overflow-wrap: anywhere; }
+.row-wave { display: block; color: #919a8e; font-size: 10px; margin-top: 3px; line-height: 1.5; }
+.row-wave .wave-code { font-family: var(--mono); letter-spacing: -.025em; color: #748571; margin-right: 5px; }
+.status-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; line-height: 1.3; padding: 5px 7px; border-radius: 4px; color: #6f7b6d; background: #eff2eb; white-space: nowrap; flex: 0 0 auto; font-weight: 450; }
+.status-tag::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+.status-tag.active { color: #527363; background: #edf3ee; }
+.status-tag.blocked, .status-tag.failed { color: var(--red); background: var(--red-soft); }
+.status-tag.review, .status-tag.waiting { color: var(--amber); background: var(--amber-soft); }
+.status-tag.done, .status-tag.complete { color: #74856d; background: #edf1e8; }
+.status-tag.todo, .status-tag.planning { color: #879180; background: #eff1eb; }
+.row-summary { font-size: 11px; color: #73806f; line-height: 1.65; margin: 13px 0 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-bottom { display: flex; align-items: center; gap: 10px; }
+.row-bottom progress { flex: 1; min-width: 24px; }
+progress { display: block; appearance: none; -webkit-appearance: none; border: none; height: 4px; background: #e8ede5; border-radius: 6px; overflow: hidden; color: var(--accent); }
+progress::-webkit-progress-bar { background: #e8ede5; border-radius: 6px; }
+progress::-webkit-progress-value { background: var(--accent); border-radius: 6px; }
+progress::-moz-progress-bar { background: var(--accent); border-radius: 6px; }
+.project-row[data-status=&quot;blocked&quot;] progress::-webkit-progress-value { background: #b39170; }
+.project-row[data-status=&quot;blocked&quot;] progress::-moz-progress-bar { background: #b39170; }
+.project-row[data-status=&quot;complete&quot;] progress::-webkit-progress-value { background: #91a187; }
+.project-row[data-status=&quot;complete&quot;] progress::-moz-progress-bar { background: #91a187; }
+.row-count { font: 10px var(--mono); color: #8d9788; min-width: 33px; text-align: right; }
+.row-count b { color: #5d715b; font-weight: 500; }
+.row-percent { font: 11px var(--mono); min-width: 30px; color: #657860; text-align: right; }
+.row-updated { color: #99a18f; font-size: 10px; white-space: nowrap; min-width: 62px; text-align: right; padding-left: 8px; border-left: 1px solid #e8ebe2; margin-left: 1px; }
+.unplanned-track { flex: 1; height: 4px; border-radius: 5px; background: repeating-linear-gradient(90deg, #dfe4d8 0, #dfe4d8 5px, transparent 5px, transparent 9px); }
+.list-footer { display: flex; align-items: center; gap: 6px; color: #97a18f; font-size: 9px; flex: 0 0 auto; padding: 13px 2px 0; }
+.snapshot-dot { width: 4px; height: 4px; border-radius: 50%; background: #99a88f; }
+.read-only-label { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+.read-only-label svg { width: 12px; height: 12px; }
+.detail-panel { min-width: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: #d8dfd3 transparent; border: 1px solid #e0e6dc; border-radius: 10px; background: white; }
+.detail-panel:focus { outline: none; }
+.detail-nav { height: 47px; padding: 0 23px; border-bottom: 1px solid #edf0e9; display: flex; align-items: center; justify-content: space-between; color: #929d8d; font-size: 10px; letter-spacing: .03em; }
+.detail-nav .detail-nav-end { display: flex; align-items: center; gap: 6px; }
+.detail-nav-end svg { width: 13px; height: 13px; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 11px; color: #697c64; }
+.back-link svg { width: 15px; height: 15px; }
+.mobile-back { display: none; }
+.detail-content { padding: 23px; }
+.detail-project-heading { display: flex; align-items: center; gap: 12px; }
+.detail-project-heading .project-icon { width: 41px; height: 41px; border-radius: 10px; }
+.detail-title-wrap { flex: 1; min-width: 0; }
+.detail-title-wrap h2 { font-size: 21px; font-weight: 600; line-height: 1.35; letter-spacing: -.035em; margin: 0 0 5px; overflow-wrap: anywhere; }
+.category-label { font-size: 10px; color: #919d8b; }
+.detail-description { color: #7a8672; line-height: 1.9; font-size: 11px; margin: 17px 0 23px; }
+.metric-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.metric-top > span { font-size: 11px; color: #7d8975; }
+.metric-ratio { display: flex; gap: 9px; align-items: baseline; font-family: var(--mono); }
+.metric-ratio strong { font-size: 27px; color: #3e5940; font-weight: 450; letter-spacing: -.065em; }
+.metric-ratio strong small { font-size: 15px; letter-spacing: -.05em; margin-left: 2px; }
+.metric-ratio > span { font-size: 11px; color: #8a9680; }
+.detail-progress { width: 100%; height: 6px; }
+.scope-note { display: flex; align-items: flex-start; gap: 6px; margin-top: 11px; font-size: 10px; line-height: 1.6; color: #909b86; }
+.scope-note svg { width: 13px; height: 13px; margin-top: 1px; }
+.scope-note.pending { color: #98784c; }
+.focus-note { display: block; width: 100%; border-radius: 6px; text-align: left; padding: 12px 13px; margin-top: 21px; background: #f1f5ee; border-left: 2px solid #8fa286; }
+.focus-note:hover { background: #ebf1e6; }
+.focus-note.blocked { border-color: #c29775; background: #faf4ec; }
+.focus-note.review { border-color: #c9ad6d; background: #faf7ed; }
+.focus-label { display: flex; align-items: center; justify-content: space-between; color: #87977b; font-size: 9px; margin-bottom: 6px; letter-spacing: .04em; }
+.focus-label svg { width: 13px; height: 13px; }
+.focus-note strong { font-size: 11px; font-weight: 500; line-height: 1.7; display: block; color: #5b7350; }
+.focus-note.blocked strong { color: #997755; }
+.focus-note.review strong { color: #8b774f; }
+.section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 27px 0 13px; }
+.section-heading h3 { font-size: 12px; font-weight: 600; margin: 0; letter-spacing: .015em; }
+.section-heading > span { font: 9px var(--mono); color: #9aa58e; }
+.wave { position: relative; border-bottom: 1px solid #edf0e8; }
+.wave > summary { list-style: none; display: flex; align-items: center; min-height: 64px; gap: 12px; cursor: pointer; padding: 9px 0; }
+.wave > summary::-webkit-details-marker { display: none; }
+.wave-number { width: 27px; height: 28px; border: 1px solid #dce3d5; background: #f8faf5; color: #98a58b; border-radius: 6px; flex: 0 0 auto; font: 10px var(--mono); display: flex; align-items: center; justify-content: center; position: relative; }
+.wave-number.complete { background: #eef4e9; color: #819671; border-color: #e2eadb; }
+.wave-number.complete svg { width: 14px; height: 14px; }
+.wave-number.current { color: white; background: var(--accent); border-color: var(--accent); }
+.wave-number.undefined { background: transparent; border-style: dashed; }
+.wave-title { flex: 1; min-width: 0; }
+.wave-title strong { display: block; font-size: 12px; font-weight: 550; line-height: 1.5; overflow-wrap: anywhere; }
+.wave-title small { display: block; font-size: 9px; color: #9aa98c; margin-top: 3px; }
+.wave.current .wave-title small { color: #69865b; }
+.wave-count { font: 10px var(--mono); color: #8c9b7f; white-space: nowrap; }
+.wave-count.text { font-family: var(--sans); font-size: 9px; }
+.wave-chevron { color: #a6b199; transition: transform .15s; }
+.wave-chevron svg { width: 12px; height: 12px; }
+.wave[open] .wave-chevron { transform: rotate(90deg); }
+.wave-body { padding: 0 0 11px 12px; margin-left: 13px; border-left: 1px solid #e4eade; }
+.task-row { display: flex; align-items: center; min-height: 44px; gap: 9px; border-radius: 5px; padding: 8px 7px 8px 10px; margin-left: 2px; }
+.task-row:hover { background: #f3f6ef; }
+.task-symbol { width: 15px; height: 15px; border: 1.4px solid #c9d2c0; border-radius: 50%; flex: 0 0 auto; color: #789567; display: inline-flex; align-items: center; justify-content: center; }
+.task-symbol svg { width: 10px; height: 10px; stroke-width: 2.2; }
+.task-symbol.done { background: #eaf2e4; border-color: #eaf2e4; }
+.task-symbol.active { border-color: #638651; border-right-color: #d5e2cc; border-bottom-color: #d5e2cc; border-width: 2px; transform: rotate(-20deg); }
+.task-symbol.waiting, .task-symbol.blocked { color: #b38451; border-color: #d6bb94; }
+.task-name { font-size: 11px; line-height: 1.55; color: #6c7b61; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.task-row[data-status=&quot;active&quot;] .task-name { color: #3f6130; font-weight: 550; }
+.task-row[data-status=&quot;done&quot;] .task-name { color: #8f9e82; }
+.task-hint { display: block; color: #9aa88d; font-size: 9px; margin-top: 3px; font-weight: 400; }
+.task-code { font: 8px var(--mono); color: #a5b198; flex: 0 0 auto; }
+.task-row > .task-chevron { width: 11px; height: 11px; color: #a5b396; }
+.wave-empty { color: #98a58d; font-size: 11px; line-height: 1.85; padding: 4px 7px 8px 10px; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-list li { display: grid; grid-template-columns: 37px 1fr; gap: 11px; position: relative; padding: 0 0 19px; }
+.activity-list time { font: 9px var(--mono); color: #a0ac93; line-height: 1.7; }
+.activity-list li > div { padding-left: 14px; border-left: 1px solid #e3e9da; position: relative; }
+.activity-list li > div::before { content: ''; position: absolute; left: -3px; top: 4px; width: 5px; height: 5px; border-radius: 50%; background: #91a680; box-shadow: 0 0 0 3px white; }
+.activity-list li strong { display: block; font-size: 10px; color: #768969; line-height: 1.7; font-weight: 450; }
+.activity-list li small { display: block; font-size: 9px; line-height: 1.65; color: #a3af94; margin-top: 3px; }
+.detail-end { text-align: center; font-size: 9px; color: #b0b9a4; padding: 5px 0 4px; }
+.task-breadcrumb { color: #96a389; font-size: 10px; line-height: 1.8; margin-bottom: 17px; overflow-wrap: anywhere; }
+.task-heading { font-size: 22px; line-height: 1.55; font-weight: 600; letter-spacing: -.025em; margin: 0 0 12px; overflow-wrap: anywhere; }
+.task-heading:focus { outline: none; }
+.task-tags { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; }
+.task-id { font: 11px var(--mono); color: #819073; background: #f1f5eb; border: 1px solid #e5ecdb; padding: 5px 6px; border-radius: 4px; }
+.task-copy { font-size: 12px; line-height: 1.95; color: #788a69; margin: 0; overflow-wrap: anywhere; }
+.task-update { background: #f3f7ee; border-radius: 7px; padding: 15px; margin-top: 24px; }
+.task-update .eyebrow { color: #9aab87; margin-bottom: 7px; }
+.task-update p { margin: 0; font-size: 12px; line-height: 1.9; color: #6d8658; overflow-wrap: anywhere; }
+.task-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--line); margin-top: 25px; padding-top: 17px; }
+.task-meta small { display: block; color: #a1ae91; font-size: 10px; margin-bottom: 7px; }
+.task-meta span { color: #7a9065; font-size: 11px; line-height: 1.7; }
+.subtask-list { list-style: none; padding: 0; margin: 0; }
+.subtask-list li { display: flex; align-items: center; gap: 11px; padding: 13px 0; border-bottom: 1px solid #edf2e6; font-size: 12px; line-height: 1.65; color: #728b5d; overflow-wrap: anywhere; }
+.subtask-list li.done { color: #98aa87; }
+.fine-note { margin: 11px 0 0; color: #a6b397; font-size: 10px; line-height: 1.8; }
+.evidence-list { margin: 0; }
+.evidence-list > div { padding: 12px 0; border-top: 1px solid #edf2e6; }
+.evidence-list dt { color: #98aa83; font-size: 10px; margin-bottom: 6px; }
+.evidence-list dd { margin: 0; color: #748e5e; font-size: 11px; line-height: 1.8; overflow-wrap: anywhere; }
+.blocking-callout { background: #fbf3e8; border-left: 2px solid #cda468; padding: 14px; margin-top: 20px; border-radius: 4px; font-size: 12px; line-height: 1.9; color: #957145; }
+.empty-state { padding: 66px 20px; text-align: center; color: #819275; }
+.empty-state > svg { width: 31px; height: 31px; margin: 0 auto 16px; color: #a6b59a; }
+.empty-state h2 { font-size: 16px; font-weight: 500; margin: 0 0 10px; }
+.empty-state p { font-size: 12px; line-height: 1.8; margin: 0 auto; max-width: 270px; overflow-wrap: anywhere; }
+.text-button { display: inline-flex; align-items: center; justify-content: center; color: var(--accent-dark); min-height: 44px; padding: 0 14px; font-size: 12px; border-radius: 5px; border: 1px solid #dbe6d0; margin-top: 18px; background: white; }
+.rules-dialog { color: var(--ink); width: min(470px, calc(100vw - 36px)); max-height: calc(100dvh - 48px); border: 1px solid #dce5d3; border-radius: 12px; padding: 26px; background: white; box-shadow: 0 22px 80px #1e35252a; }
+.rules-dialog::backdrop { background: #24332957; backdrop-filter: blur(3px); }
+.dialog-top { display: flex; justify-content: space-between; align-items: center; margin: -9px -9px 12px 0; }
+.rules-dialog h2 { font-size: 24px; letter-spacing: -.035em; font-weight: 600; margin: 0 0 12px; }
+.dialog-intro { font-size: 12px; color: #859677; line-height: 1.7; margin: 0; }
+.formula { display: flex; align-items: center; justify-content: space-between; gap: 9px; background: #f3f7ef; padding: 21px 18px; border-radius: 7px; margin: 23px 0; }
+.formula > span { text-align: center; }
+.formula strong { display: block; font: 26px var(--mono); color: #687e55; }
+.formula small { display: block; font-size: 9px; color: #98ab84; margin-top: 6px; white-space: nowrap; }
+.formula b { font-size: 18px; font-weight: 400; color: #b1c29f; }
+.formula .formula-result strong { color: #426d2a; }
+.formula em { font-size: 17px; font-style: normal; }
+.rules-list { list-style: none; margin: 0; padding: 0; }
+.rules-list li { padding: 13px 0; border-bottom: 1px solid #edf3e4; }
+.rules-list strong { display: block; font-size: 12px; font-weight: 550; color: #6c8558; margin-bottom: 6px; }
+.rules-list span { display: block; color: #96aa82; font-size: 11px; line-height: 1.8; }
+.dialog-foot { font-size: 10px; color: #a6b994; line-height: 1.8; margin-top: 18px; }
+.noscript { position: fixed; inset: auto 12px 12px; background: white; border: 1px solid var(--red); padding: 20px; z-index: 100; }
+.row-identity strong { font-size: 15px; }
+.row-wave, .row-summary, .row-updated, .list-caption, .category-label,
+.detail-description, .scope-note, .wave-title small, .wave-count, .task-hint,
+.task-code, .activity-list time, .activity-list li small, .task-breadcrumb,
+.task-meta small, .fine-note, .evidence-list dt, .dialog-intro, .rules-list span,
+.dialog-foot, .formula small { color: var(--muted); }
+.row-wave { font-size: 11px; }
+.row-summary, .filter-button, .detail-description { font-size: 12px; }
+.status-tag { font-size: 11px; }
+.page-subtitle { font-size: 12px; }
+.scope-note { font-size: 11px; }
+.section-heading h3 { font-size: 13px; }
+.task-name { font-size: 12px; color: #5f7064; }
+.task-row[data-status=&quot;done&quot;] .task-name { color: #6d7b70; }
+.task-hint { font-size: 10px; }
+.wave-title small { font-size: 10px; }
+.activity-list li strong { font-size: 11px; color: #637267; }
+.activity-list li small, .task-code { font-size: 10px; }
+.task-copy, .task-update p, .evidence-list dd, .task-meta span,
+.subtask-list li, .subtask-list li.done, .rules-list strong { color: #5f7064; }
+.task-copy, .task-update p { font-size: 13px; }
+.focus-note strong { font-size: 12px; }
+.focus-label { color: #6b7d65; font-size: 10px; }
+.evidence-list dd { font-size: 12px; }
+@media (min-width: 1700px) { .sidebar { flex-basis: 214px; padding-left: 22px; padding-right: 22px; } .main { padding-left: 42px; padding-right: 42px; } .workspace { grid-template-columns: minmax(380px, 1fr) minmax(430px, 520px); gap: 32px; } .project-row { padding: 22px; } .row-identity strong { font-size: 16px; } .row-summary { font-size: 12px; } .detail-content { padding: 28px; } }
+@media (min-width: 1001px) and (max-width: 1190px) { .sidebar { flex-basis: 162px; padding-left: 10px; padding-right: 10px; } .main { padding-left: 20px; padding-right: 20px; } .workspace { grid-template-columns: minmax(305px, 1fr) 345px; gap: 17px; } .filters { gap: 15px; } .row-updated { display: none; } .detail-content { padding: 19px; } .brand { padding-left: 6px; font-size: 19px; gap: 8px; } }
+@media (max-width: 1000px) {
+  .app-shell { height: auto; min-height: 100vh; min-height: 100dvh; display: block; }
+  .sidebar { display: none; }
+  .main { display: block; padding: max(0px, env(safe-area-inset-top)) 20px max(22px, env(safe-area-inset-bottom)); max-width: 680px; margin: auto; }
+  .page-header { padding: 24px 0 22px; gap: 8px; position: relative; }
+  .page-heading h1 { font-size: 27px; margin-top: 19px; margin-bottom: 9px; }
+  .desktop-kicker, .kicker-slash { display: none; }
+  .mobile-kicker { display: inline; color: #677e5c; letter-spacing: .08em; font-size: 11px; }
+  .eyebrow { gap: 7px; }
+  .mini-brand { display: inline-flex; align-items: flex-end; gap: 3px; width: 17px; height: 16px; padding-bottom: 1px; margin-right: 1px; }
+  .mini-brand i { width: 3px; height: 15px; border-radius: 1px; background: #6b8858; }
+  .mini-brand i:nth-child(2) { height: 10px; background: #92a982; }
+  .mini-brand i:nth-child(3) { height: 6px; background: #b7c6aa; }
+  .page-heading > .eyebrow { font-size: 0; }
+  .page-subtitle { font-size: 11px; gap: 7px; }
+  .header-actions { padding-top: 0; gap: 0; margin-right: -5px; position: absolute; top: 13px; right: 0; }
+  .demo-menu > summary { min-height: 44px; height: 44px; border: 0; background: transparent; padding: 0 7px; gap: 5px; font-size: 10px; }
+  .rules-button { width: 44px; height: 44px; }
+  .rules-button svg { width: 16px; height: 16px; }
+  .workspace { display: block; }
+  .search-wrap { height: 44px; }
+  .search-wrap input { font-size: 16px; }
+  .search-wrap input::placeholder { font-size: 12px; }
+  .search-wrap kbd { display: none; }
+  .filters { gap: 0; justify-content: space-between; margin-top: 11px; }
+  .filter-button { font-size: 12px; gap: 5px; min-height: 46px; padding: 0 2px; }
+  .list-caption { padding-top: 16px; padding-bottom: 11px; font-size: 9px; }
+  .project-scroll { overflow: visible; padding: 1px 0; }
+  .project-list { gap: 10px; }
+  .project-row { padding: 16px 15px; border-radius: 9px; background: #fcfdf9; }
+  .project-row.selected { background: #fcfdf9; border-color: #e3e7df; box-shadow: none; }
+  .project-row.selected::before { display: none; }
+  .row-identity strong { font-size: 15px; }
+  .row-wave { font-size: 10px; }
+  .row-top { gap: 10px; }
+  .status-tag { font-size: 10px; padding: 5px 6px; }
+  .project-icon { width: 35px; height: 35px; }
+  .row-summary { margin: 12px 0 13px; font-size: 12px; }
+  .row-bottom { gap: 9px; }
+  .row-updated { min-width: 53px; font-size: 9px; padding-left: 7px; }
+  .row-count, .row-percent { font-size: 10px; }
+  .list-footer { font-size: 9px; padding: 17px 2px 0; }
+  .detail-panel { display: none; border: 0; border-radius: 0; overflow: visible; background: var(--canvas); }
+  body:not([data-view=&quot;home&quot;]) .project-panel { display: none; }
+  body:not([data-view=&quot;home&quot;]) .detail-panel { display: block; }
+  body:not([data-view=&quot;home&quot;]) .page-header { padding-top: 16px; padding-bottom: 0; height: 57px; align-items: flex-start; }
+  body:not([data-view=&quot;home&quot;]) .page-heading h1, body:not([data-view=&quot;home&quot;]) .page-subtitle { display: none; }
+  body:not([data-view=&quot;home&quot;]) .page-heading > .eyebrow { margin-top: 9px; }
+  .detail-nav { padding: 0; height: 48px; border-color: #e0e8d8; margin-bottom: 20px; }
+  .desktop-detail-label { display: none; }
+  .mobile-back { display: inline-flex; }
+  .back-link { font-size: 12px; }
+  .detail-nav-end { font-size: 10px; color: #a1b18f; }
+  .detail-content { padding: 0; }
+  .detail-title-wrap h2 { font-size: 24px; line-height: 1.4; }
+  .detail-project-heading { gap: 13px; }
+  .detail-project-heading .project-icon { width: 45px; height: 45px; }
+  .category-label { font-size: 10px; }
+  .detail-description { font-size: 13px; line-height: 1.85; margin-top: 19px; }
+  .detail-project-heading > .status-tag { font-size: 9px; }
+  .metric-top { margin-bottom: 11px; }
+  .metric-top > span { font-size: 11px; }
+  .metric-ratio strong { font-size: 30px; }
+  .scope-note { font-size: 11px; margin-top: 12px; }
+  .focus-note { background: #eaf1e3; margin-top: 22px; padding: 13px; }
+  .focus-note strong { font-size: 12px; }
+  .focus-label { font-size: 10px; }
+  .section-heading { margin-top: 30px; margin-bottom: 14px; }
+  .section-heading h3 { font-size: 14px; }
+  .wave > summary { min-height: 69px; }
+  .wave-title strong { font-size: 13px; }
+  .wave-title small { font-size: 10px; }
+  .wave-count { font-size: 11px; }
+  .wave { border-color: #e1e8d8; }
+  .wave-number { background: #f9fcf4; width: 28px; height: 30px; }
+  .task-row { min-height: 48px; padding-top: 10px; padding-bottom: 10px; }
+  .task-name { font-size: 13px; }
+  .task-code { font-size: 9px; }
+  .task-hint { font-size: 11px; }
+  .wave-body { border-color: #dce7d0; }
+  .wave-empty { font-size: 12px; }
+  .activity-list li strong { font-size: 11px; }
+  .activity-list li small { font-size: 10px; }
+  .activity-list li > div::before { box-shadow: 0 0 0 3px var(--canvas); }
+  .activity-list li { grid-template-columns: 41px 1fr; padding-bottom: 22px; }
+  .activity-list time { font-size: 10px; }
+  .detail-end { font-size: 10px; padding: 16px 0 6px; }
+  .task-heading { font-size: 24px; line-height: 1.55; }
+  .task-copy, .task-update p { font-size: 14px; }
+  .task-update { background: #eaf2e1; }
+  .task-meta span, .evidence-list dd { font-size: 12px; }
+  .task-meta small, .evidence-list dt { font-size: 11px; }
+  .subtask-list li { font-size: 13px; }
+  .offline-banner { margin: -3px 0 17px; padding: 12px; align-items: flex-start; gap: 9px; }
+  .offline-banner > [data-icon] { margin-top: 2px; }
+  .offline-tag { display: none; }
+  .offline-banner strong { font-size: 11px; }
+  .offline-banner div > span { font-size: 10px; }
+  body:not([data-view=&quot;home&quot;]) .offline-banner { margin-top: 5px; }
+  .rules-dialog { padding: 22px; }
+  .rules-dialog h2 { font-size: 22px; }
+  .formula { padding: 20px 13px; }
+  .rules-list strong { font-size: 12px; }
+  .rules-list span { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body data-view=&quot;home&quot;>
+  <a class=&quot;skip-link&quot; href=&quot;#main-content&quot; data-action=&quot;skip&quot;>跳到主要内容</a>
+  <div class=&quot;app-shell&quot;>
+    <aside class=&quot;sidebar&quot; aria-label=&quot;工作台导航&quot;>
+      <a class=&quot;brand&quot; href=&quot;#&quot; aria-label=&quot;进度簿首页&quot;><span class=&quot;brand-mark&quot; aria-hidden=&quot;true&quot;><i></i><i></i><i></i></span><span>进度簿<small>个人工作台</small></span></a>
+      <nav class=&quot;primary-nav&quot; aria-label=&quot;查看范围&quot; id=&quot;primary-nav&quot;></nav>
+      <div class=&quot;side-section-label&quot;>项目<span id=&quot;side-project-count&quot;>06</span></div>
+      <nav class=&quot;side-projects&quot; aria-label=&quot;项目快捷入口&quot; id=&quot;side-projects&quot;></nav>
+      <div class=&quot;sidebar-bottom&quot;>
+        <div class=&quot;source-machine&quot;><span data-icon=&quot;monitor&quot;></span><div>Windows 本机<small>个人工作空间</small></div><span class=&quot;source-dot&quot; aria-hidden=&quot;true&quot;></span></div>
+        <div class=&quot;sidebar-foot&quot;><span data-icon=&quot;eye&quot;></span>只读查看<span class=&quot;foot-version&quot;>DEMO / 01</span></div>
+      </div>
+    </aside>
+    <main class=&quot;main&quot; id=&quot;main-content&quot; tabindex=&quot;-1&quot;>
+      <header class=&quot;page-header&quot;>
+        <div class=&quot;page-heading&quot;>
+          <div class=&quot;eyebrow&quot;><span class=&quot;mini-brand&quot; aria-hidden=&quot;true&quot;><i></i><i></i><i></i></span><span class=&quot;desktop-kicker&quot;>工作空间</span><span class=&quot;mobile-kicker&quot;>进度簿</span><span class=&quot;kicker-slash&quot;>/</span>项目</div>
+          <h1>项目总览<span class=&quot;heading-count&quot; id=&quot;heading-count&quot;>6</span></h1>
+          <p class=&quot;page-subtitle&quot;><span id=&quot;date-label&quot;></span><span class=&quot;sub-dot&quot;>·</span><span id=&quot;overview-summary&quot;></span></p>
+        </div>
+        <div class=&quot;header-actions&quot;>
+          <details class=&quot;demo-menu&quot; id=&quot;demo-menu&quot;>
+            <summary><span class=&quot;demo-mark&quot; aria-hidden=&quot;true&quot;></span><span>演示数据</span><span data-icon=&quot;chevronDown&quot;></span></summary>
+            <div class=&quot;demo-options&quot;><p>预览场景</p><button type=&quot;button&quot; data-scenario=&quot;online&quot;><span data-icon=&quot;sun&quot;></span>正常显示<span class=&quot;option-check&quot; data-check=&quot;online&quot;>✓</span></button><button type=&quot;button&quot; data-scenario=&quot;offline&quot;><span data-icon=&quot;wifiOff&quot;></span>本机离线<span class=&quot;option-check&quot; data-check=&quot;offline&quot;></span></button><small>此处仅切换演示场景，<br>不会更新任何项目状态。</small></div>
+          </details>
+          <button class=&quot;icon-button rules-button&quot; type=&quot;button&quot; data-action=&quot;rules&quot; aria-label=&quot;查看进度计算方式&quot; title=&quot;进度计算方式&quot;><span data-icon=&quot;help&quot;></span></button>
+        </div>
+      </header>
+      <div class=&quot;offline-banner&quot; id=&quot;offline-banner&quot; hidden role=&quot;status&quot;><span data-icon=&quot;wifiOff&quot;></span><div><strong>暂时无法连接本机</strong><span>以下保留最后一次记录 · 今天 14:38。请确认电脑在线后再查看。</span></div><span class=&quot;offline-tag&quot;>离线示例</span></div>
+      <div class=&quot;workspace&quot;>
+        <section class=&quot;project-panel&quot; aria-label=&quot;项目列表&quot;>
+          <div class=&quot;search-wrap&quot;><span data-icon=&quot;search&quot;></span><input id=&quot;project-search&quot; type=&quot;search&quot; placeholder=&quot;搜索项目或任务&quot; aria-label=&quot;搜索项目或任务&quot; autocomplete=&quot;off&quot;><kbd aria-hidden=&quot;true&quot;>Ctrl K</kbd></div>
+          <div class=&quot;filters&quot; id=&quot;filters&quot; role=&quot;group&quot; aria-label=&quot;筛选项目&quot;></div>
+          <div class=&quot;list-caption&quot;><span id=&quot;list-caption&quot;></span><span>已规划范围</span></div>
+          <div class=&quot;project-scroll&quot; id=&quot;project-scroll&quot;><div id=&quot;project-list&quot; class=&quot;project-list&quot; role=&quot;list&quot;></div></div>
+          <div class=&quot;list-footer&quot;><span class=&quot;snapshot-dot&quot; aria-hidden=&quot;true&quot;></span><span id=&quot;snapshot-label&quot;>示例快照 · 今天 14:38</span><span class=&quot;read-only-label&quot;><span data-icon=&quot;eye&quot;></span>只读</span></div>
+        </section>
+        <aside class=&quot;detail-panel&quot; id=&quot;detail-panel&quot; aria-label=&quot;项目详情&quot; tabindex=&quot;-1&quot;></aside>
+      </div>
+    </main>
+  </div>
+  <dialog class=&quot;rules-dialog&quot; id=&quot;rules-dialog&quot; aria-labelledby=&quot;rules-title&quot;>
+    <div class=&quot;dialog-top&quot;><span class=&quot;eyebrow&quot;>计量口径</span><button class=&quot;icon-button&quot; type=&quot;button&quot; data-action=&quot;close-rules&quot; aria-label=&quot;关闭计算说明&quot;><span data-icon=&quot;close&quot;></span></button></div>
+    <h2 id=&quot;rules-title&quot;>每个 Task，算一步。</h2>
+    <p class=&quot;dialog-intro&quot;>百分比表示已规划任务的实施完成比例。</p>
+    <div class=&quot;formula&quot;><span><strong>12</strong><small>已完成 Task</small></span><b>÷</b><span><strong>20</strong><small>已规划 Task</small></span><b>=</b><span class=&quot;formula-result&quot;><strong>60<em>%</em></strong><small>范围内进度</small></span></div>
+    <ul class=&quot;rules-list&quot;><li><strong>通过检查才计入完成</strong><span>人工验收独立标记，待验收不抵消已完成的实施工作。</span></li><li><strong>子项不增加 Task 数量</strong><span>Wave 用于分组，子项用于展示细节；项目比例直接汇总 Task。</span></li><li><strong>未拆分的计划明确标注</strong><span>未来 Wave 待细化时，不将已有任务的 100% 当成全项目完成。</span></li></ul>
+    <div class=&quot;dialog-foot&quot;>本页为虚构演示数据，不代表本机实时状态。</div>
+  </dialog>
+  <noscript><style>.app-shell{display:none}.static-preview{max-width:680px;margin:auto;padding:24px 20px}.static-preview h1{font-size:27px;font-weight:600;margin:12px 0}.static-preview>p{font-size:12px;line-height:1.9;color:#69756f;margin-bottom:24px}.static-preview .project-list{gap:12px}</style><main class=&quot;static-preview&quot;><div class=&quot;eyebrow&quot;>进度簿 · 演示数据</div><h1>项目总览</h1><p>当前显示静态概览。在支持页面交互的浏览器中打开，可进一步查看 Wave 和 Task 详情。</p><div class=&quot;project-list&quot;><div class=&quot;project-row&quot; data-status=&quot;active&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon sage&quot;>知</span><div class=&quot;row-identity&quot;><strong>本地知识库</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag active&quot;>进行中</span></div><p class=&quot;row-summary&quot;>正在处理检索结果去重，引用来源已接通。</p><div class=&quot;row-bottom&quot;><progress value=&quot;12&quot; max=&quot;20&quot;></progress><span class=&quot;row-count&quot;>12 / 20</span><span class=&quot;row-percent&quot;>60%</span><span class=&quot;row-updated&quot;>2 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;blocked&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon sand&quot;>账</span><div class=&quot;row-identity&quot;><strong>账单归档</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag blocked&quot;>已阻塞</span></div><p class=&quot;row-summary&quot;>导入流程已完成，等待确认退款的归属月份。</p><div class=&quot;row-bottom&quot;><progress value=&quot;6&quot; max=&quot;10&quot;></progress><span class=&quot;row-count&quot;>6 / 10</span><span class=&quot;row-percent&quot;>60%</span><span class=&quot;row-updated&quot;>18 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;review&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon plum&quot;>相</span><div class=&quot;row-identity&quot;><strong>家庭相册整理</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag review&quot;>待验收</span></div><p class=&quot;row-summary&quot;>已完成全部检查，等待查看分组与预览效果。</p><div class=&quot;row-bottom&quot;><progress value=&quot;8&quot; max=&quot;8&quot;></progress><span class=&quot;row-count&quot;>8 / 8</span><span class=&quot;row-percent&quot;>100%</span><span class=&quot;row-updated&quot;>42 分钟前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;active&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon blue&quot;>阅</span><div class=&quot;row-identity&quot;><strong>阅读清单</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag active&quot;>进行中</span></div><p class=&quot;row-summary&quot;>收藏入口可用，正在整理列表的筛选体验。</p><div class=&quot;row-bottom&quot;><progress value=&quot;3&quot; max=&quot;9&quot;></progress><span class=&quot;row-count&quot;>3 / 9</span><span class=&quot;row-percent&quot;>33%</span><span class=&quot;row-updated&quot;>1 小时前</span></div></div><div class=&quot;project-row&quot; data-status=&quot;complete&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon stone&quot;>小</span><div class=&quot;row-identity&quot;><strong>日常小工具</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag complete&quot;>已完成</span></div><p class=&quot;row-summary&quot;>全部任务完成，交付检查已通过。</p><div class=&quot;row-bottom&quot;><progress value=&quot;9&quot; max=&quot;9&quot;></progress><span class=&quot;row-count&quot;>9 / 9</span><span class=&quot;row-percent&quot;>100%</span><span class=&quot;row-updated&quot;>昨天</span></div></div><div class=&quot;project-row&quot; data-status=&quot;planning&quot;><div class=&quot;row-top&quot;><span class=&quot;project-icon stone&quot;>站</span><div class=&quot;row-identity&quot;><strong>个人站点可用性与证书到期检查</strong><span class=&quot;row-wave&quot;>已规划范围</span></div><span class=&quot;status-tag planning&quot;>规划中</span></div><p class=&quot;row-summary&quot;>已明确检查范围，任务尚待拆分。</p><div class=&quot;row-bottom&quot;><span class=&quot;unplanned-track&quot;></span><span class=&quot;row-count&quot;>尚未登记任务</span><span class=&quot;row-updated&quot;>昨天</span></div></div></div></main></noscript>
+  <script>(function (root) {
+  'use strict';
+  function summarize(project) {
+    const waves = project.waves || [];
+    const tasks = waves.flatMap(wave => wave.tasks || []).filter(task => task.status !== 'cancelled');
+    const completed = tasks.filter(task => task.status === 'done' &amp;&amp; task.verified === true);
+    return {
+      done: completed.length,
+      total: tasks.length,
+      percent: tasks.length ? Math.round(completed.length / tasks.length * 100) : null,
+      unplannedWaves: waves.filter(wave => wave.defined === false).length,
+      pendingAcceptance: (project.acceptance === 'pending' ? 1 : 0)
+        + waves.filter(wave => wave.acceptance === 'pending').length
+        + completed.filter(task => task.acceptance === 'pending').length,
+    };
+  }
+  function matches(project, query) {
+    const needle = query.trim().toLocaleLowerCase();
+    if (!needle) return true;
+    const taskText = task => [task.title, task.summary, ...(task.children || []).map(taskText)].join(' ');
+    const text = [project.name, project.description, project.summary,
+      ...(project.waves || []).flatMap(wave => [wave.name, ...(wave.tasks || []).map(taskText)]),
+    ].join(' ').toLocaleLowerCase();
+    return text.includes(needle);
+  }
+  const api = Object.freeze({ summarize, matches });
+  root.ProgressModel = api;
+  if (typeof module !== 'undefined' &amp;&amp; module.exports) module.exports = api;
+})(globalThis);
+</script>
+  <script>(function (root) {
+  'use strict';
+  function wave(id, name, titles, doneCount, options = {}) {
+    return {
+      id, name, defined: true, acceptance: 'not_required',
+      tasks: titles.map((title, index) => ({
+        id: `${id}-t${index + 1}`, code: `T${Number(id.slice(1))}.${index + 1}`, title,
+        status: index < doneCount ? 'done' : 'todo', verified: index < doneCount,
+        acceptance: 'not_required',
+        goal: `完成${title}，并检查正常输入和异常输入下的表现。`,
+        summary: index < doneCount ? '实现与约定检查已完成，结果已记录。' : '尚未开始，按阶段计划推进。',
+        updated: index < doneCount ? '今天 11:20' : '今天 09:10',
+        evidence: index < doneCount ? [{ label: '检查结果', text: '约定的功能检查通过' }, { label: '记录位置', text: `docs/tasks/${id}-${index + 1}.md` }] : [],
+        children: [],
+      })),
+      ...options,
+    };
+  }
+  const knowledge = {
+    id: 'knowledge', name: '本地知识库', shortName: '知识库', glyph: 'book', color: 'sage',
+    description: '把散落的笔记和资料放在一起，检索时保留原文出处。',
+    summary: '正在处理检索结果去重，引用来源已接通。', status: 'active',
+    updated: '2 分钟前', updatedAt: '今天 14:36', currentWave: 'w2', category: '个人工具',
+    waves: [
+      wave('w1', '资料接入', ['定义文档目录结构', '导入 Markdown 笔记', '解析 PDF 正文', '提取文档元数据', '文件变更检测', '重复文件识别', '增量导入记录', '接入流程验证'], 8),
+      wave('w2', '检索与引用', ['建立全文索引', '中文分词与召回', '连接原文引用', '检索结果排序', '合并重复检索片段', '高亮命中段落', '分页与空结果处理', '检索体验回归'], 4),
+      wave('w3', '阅读体验', ['资料阅读页', '标签与目录导航', '手机阅读布局', '阅读状态回归'], 0),
+      { id: 'w4', name: '多端验证', defined: false, tasks: [] },
+      { id: 'w5', name: '交付与整理', defined: false, tasks: [] },
+    ],
+    updates: [
+      { time: '14:36', tone: 'active', text: '开始合并重复检索片段', detail: 'Wave 02 · T2.5' },
+      { time: '14:08', tone: 'done', text: '检索结果排序检查通过', detail: '已规划任务 11 → 12 / 20' },
+      { time: '11:20', tone: 'done', text: '原文引用已连接到检索结果', detail: 'Wave 02 · T2.3' },
+    ],
+  };
+  Object.assign(knowledge.waves[1].tasks[4], {
+    status: 'active', goal: '同一段内容被多个来源命中时，只保留一份清晰结果，同时保留所有原文引用。',
+    summary: '文档标识归一化已完成，正在处理相邻片段的重叠区间。', updated: '今天 14:36',
+    children: [
+      { title: '归一化文档标识', status: 'done' },
+      { title: '合并相邻片段的重叠区间', status: 'active' },
+      { title: '验证跨来源引用仍可追溯', status: 'todo' },
+    ],
+    evidence: [{ label: '当前记录', text: 'docs/tasks/retrieval-dedup.md' }, { label: '验证要求', text: '无重复结果；来源引用完整；空结果可正常返回' }],
+  });
+
+  const billing = {
+    id: 'billing', name: '账单归档', shortName: '账单归档', glyph: 'receipt', color: 'sand',
+    description: '把不同来源的账单整理成统一、可核对的月度记录。',
+    summary: '导入流程已完成，等待确认退款的归属月份。', status: 'blocked',
+    updated: '18 分钟前', updatedAt: '今天 14:20', currentWave: 'w2', category: '生活管理',
+    blocker: '退款按原消费月份归档，还是按实际退款月份归档？',
+    waves: [
+      wave('w1', '数据导入', ['识别账单格式', '清洗日期与金额', '建立统一记录', '检查重复账单'], 4),
+      wave('w2', '分类与核对', ['设置分类规则', '核对总金额', '确认退款归属规则', '生成月度汇总', '补充导入异常提示', '整体验证'], 2),
+    ],
+    updates: [
+      { time: '14:20', tone: 'blocked', text: '退款归属规则需要确认', detail: '当前进度保留在 6 / 10' },
+      { time: '13:42', tone: 'done', text: '月度总金额核对通过', detail: 'Wave 02 · T2.2' },
+    ],
+  };
+  Object.assign(billing.waves[1].tasks[2], {
+    status: 'waiting', summary: '同一笔跨月退款会影响两个月的汇总，需要先确定记账口径。',
+    goal: '统一退款记录的月份归属，避免统计规则前后不一致。',
+    blocker: billing.blocker, updated: '今天 14:20',
+    evidence: [{ label: '两种口径', text: '原消费月：便于追溯消费；实际退款月：贴近资金变化。' }],
+  });
+
+  const photos = {
+    id: 'photos', name: '家庭相册整理', shortName: '相册整理', glyph: 'image', color: 'plum',
+    description: '按拍摄日期整理家庭照片，保留原图并生成轻量预览。',
+    summary: '已完成全部检查，等待查看分组与预览效果。', status: 'review',
+    updated: '42 分钟前', updatedAt: '今天 13:56', currentWave: 'w2', category: '生活管理',
+    waves: [
+      wave('w1', '归档规则', ['读取拍摄日期', '识别重复照片', '建立年月目录', '保留原始文件'], 4),
+      wave('w2', '预览与验证', ['生成照片缩略图', '提供相册预览', '检查日期缺失情况', '验证归档结果'], 4, { acceptance: 'pending' }),
+    ],
+    updates: [{ time: '13:56', tone: 'review', text: '实施完成，等待阶段验收', detail: '8 / 8 Task · Wave 02 待验收' }],
+  };
+  Object.assign(photos.waves[1].tasks[3], { summary: '抽查原图、日期分组与缩略图，约定检查均已通过。', evidence: [
+    { label: '验证结果', text: '原图数量一致；重复项可追溯；缺失日期的照片单独归档。' },
+    { label: '阶段验收', text: '待查看相册预览效果。实施进度已计入完成。' },
+  ] });
+
+  const reading = {
+    id: 'reading', name: '阅读清单', shortName: '阅读清单', glyph: 'bookmark', color: 'blue',
+    description: '统一收藏稍后阅读的文章，保留来源与阅读状态。',
+    summary: '收藏入口可用，正在整理列表的筛选体验。', status: 'active',
+    updated: '1 小时前', updatedAt: '今天 13:12', currentWave: 'w2', category: '个人工具',
+    waves: [
+      wave('w1', '收藏入口', ['保存文章链接', '提取标题与来源', '识别重复收藏'], 3),
+      wave('w2', '列表与阅读', ['筛选未读文章', '按来源浏览', '搜索收藏内容', '文章详情页', '手机适配', '阅读流程验证'], 0),
+    ],
+    updates: [{ time: '13:12', tone: 'active', text: '开始实现未读筛选', detail: 'Wave 02 · T2.1' }],
+  };
+  Object.assign(reading.waves[1].tasks[0], { status: 'active', summary: '筛选条件已接通，正在检查空列表和切换后的滚动位置。' });
+
+  const toolbox = {
+    id: 'toolbox', name: '日常小工具', shortName: '小工具', glyph: 'grid', color: 'stone',
+    description: '把常用的文本处理与格式转换工具放在一个页面。',
+    summary: '全部任务完成，交付检查已通过。', status: 'complete',
+    updated: '昨天', updatedAt: '昨天 18:05', currentWave: 'w3', category: '个人工具',
+    waves: [
+      wave('w1', '基础页面', ['工具入口', '通用输入区域', '结果展示'], 3),
+      wave('w2', '常用工具', ['文本去重', '格式转换', '时间戳换算'], 3),
+      wave('w3', '交付检查', ['手机布局', '键盘操作', '完整回归'], 3, { acceptance: 'accepted' }),
+    ],
+    updates: [{ time: '昨天', tone: 'done', text: '交付检查已通过', detail: '9 / 9 Task · 已验收' }],
+  };
+  const monitor = {
+    id: 'monitor', name: '个人站点可用性与证书到期检查', shortName: '站点检查', glyph: 'globe', color: 'stone',
+    description: '定期检查个人站点是否可访问，以及证书是否即将到期。',
+    summary: '已明确检查范围，任务尚待拆分。', status: 'planning',
+    updated: '昨天', updatedAt: '昨天 16:30', currentWave: 'w1', category: '基础设施',
+    waves: [{ id: 'w1', name: '站点与规则', defined: false, tasks: [] }, { id: 'w2', name: '检查与展示', defined: false, tasks: [] }],
+    updates: [{ time: '昨天', tone: 'todo', text: '记录站点检查范围', detail: '2 个 Wave 待细化' }],
+  };
+  const data = { dateLabel: '9 月 28 日，周一', snapshotLabel: '今天 14:38', projects: [knowledge, billing, photos, reading, toolbox, monitor] };
+  root.DemoData = data;
+  if (typeof module !== 'undefined' &amp;&amp; module.exports) module.exports = data;
+})(globalThis);
+</script>
+  <script>(function () {
+  'use strict';
+  const { projects, dateLabel } = DemoData;
+  const { summarize, matches } = ProgressModel;
+  const $ = selector => document.querySelector(selector);
+  const esc = value => String(value ?? '').replace(/[&amp;<>&quot;']/g, character => ({ '&amp;': '&amp;amp;', '<': '&amp;lt;', '>': '&amp;gt;', '&quot;': '&amp;quot;', &quot;'&quot;: '&amp;#39;' }[character]));
+  const shapes = {
+    grid: '<rect x=&quot;3&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;3&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;3&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/><rect x=&quot;14&quot; y=&quot;14&quot; width=&quot;7&quot; height=&quot;7&quot; rx=&quot;1.5&quot;/>',
+    book: '<path d=&quot;M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4z&quot;/><path d=&quot;M13 7a3 3 0 0 1 3-3h4v15h-4a4 4 0 0 0-3 2&quot;/><path d=&quot;M7 8h3M7 11h3&quot;/>',
+    receipt: '<path d=&quot;M5 3l3 2 4-2 4 2 3-2v18l-3-2-4 2-4-2-3 2z&quot;/><path d=&quot;M9 9h6M9 13h6&quot;/>',
+    image: '<rect x=&quot;3&quot; y=&quot;4&quot; width=&quot;18&quot; height=&quot;16&quot; rx=&quot;3&quot;/><circle cx=&quot;8&quot; cy=&quot;9&quot; r=&quot;1.5&quot;/><path d=&quot;m21 16-5-5-7 8M3 16l4-4 4 3&quot;/>',
+    bookmark: '<path d=&quot;M6 3h12v18l-6-4-6 4z&quot;/><path d=&quot;M9 7h6M9 10h4&quot;/>',
+    globe: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18z&quot;/>',
+    monitor: '<rect x=&quot;3&quot; y=&quot;4&quot; width=&quot;18&quot; height=&quot;13&quot; rx=&quot;2&quot;/><path d=&quot;M8 21h8M12 17v4&quot;/>',
+    eye: '<path d=&quot;M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z&quot;/><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;3&quot;/>',
+    search: '<circle cx=&quot;10.5&quot; cy=&quot;10.5&quot; r=&quot;6.5&quot;/><path d=&quot;m16 16 5 5&quot;/>',
+    help: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M9.3 8.7a2.8 2.8 0 0 1 5.4.9c0 2-2.7 2-2.7 4M12 17h.01&quot;/>',
+    chevronDown: '<path d=&quot;m6 9 6 6 6-6&quot;/>',
+    chevronRight: '<path d=&quot;m9 5 7 7-7 7&quot;/>',
+    arrowLeft: '<path d=&quot;m10 5-7 7 7 7M3 12h18&quot;/>',
+    arrowUpRight: '<path d=&quot;M6 18 18 6M6 6h12v12&quot;/>',
+    arrowRight: '<path d=&quot;M4 12h16m-6-6 6 6-6 6&quot;/>',
+    close: '<path d=&quot;m6 6 12 12M6 18 18 6&quot;/>',
+    check: '<path d=&quot;m5 12 4 4L19 6&quot;/>',
+    attention: '<path d=&quot;M12 3 2.5 20h19z&quot;/><path d=&quot;M12 9v4M12 16h.01&quot;/>',
+    checkCircle: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;m7 12 3 3 7-7&quot;/>',
+    clock: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;9&quot;/><path d=&quot;M12 7v5l3 2&quot;/>',
+    sun: '<circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;4&quot;/><path d=&quot;M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5&quot;/>',
+    wifiOff: '<path d=&quot;m3 3 18 18M8.5 8.5A13 13 0 0 0 2 12m20 0a13 13 0 0 0-10-4M5 16a9 9 0 0 1 7-3m6.5 3a9 9 0 0 0-2-1.5M8 19a5 5 0 0 1 7-1M12 21h.01&quot;/>',
+    layers: '<path d=&quot;m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5&quot;/>',
+    empty: '<path d=&quot;M5 5h14l3 11v4H2v-4z&quot;/><path d=&quot;M2 16h6l2 3h4l2-3h6M9 9h6&quot;/>',
+    pause: '<path d=&quot;M9 7v10M15 7v10&quot;/>',
+  };
+  const icon = (name, cls = '') => `<svg class=&quot;${cls}&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-linecap=&quot;round&quot; stroke-linejoin=&quot;round&quot; aria-hidden=&quot;true&quot;>${shapes[name] || shapes.grid}</svg>`;
+  function fillIcons(container = document) { container.querySelectorAll('[data-icon]').forEach(node => { node.innerHTML = icon(node.dataset.icon); }); }
+  const statusLabels = { active: '进行中', blocked: '已阻塞', review: '待验收', complete: '已完成', planning: '规划中', done: '已完成', todo: '未开始', waiting: '待确认', failed: '失败', cancelled: '已取消' };
+  const statusTag = status => `<span class=&quot;status-tag ${esc(status)}&quot;>${esc(statusLabels[status] || status)}</span>`;
+  const attention = project => ['blocked', 'review'].includes(project.status) || summarize(project).pendingAcceptance > 0;
+  const filters = [
+    { id: 'all', name: '全部', nav: '项目总览', icon: 'grid', match: () => true },
+    { id: 'active', name: '进行中', nav: '进行中', icon: 'clock', match: p => p.status === 'active' },
+    { id: 'attention', name: '需关注', nav: '需要关注', icon: 'attention', match: attention },
+    { id: 'complete', name: '已完成', nav: '已完成', icon: 'checkCircle', match: p => p.status === 'complete' },
+  ];
+  const state = { filter: 'all', query: '', projectId: projects[0].id, view: 'home', taskId: null, scenario: 'online', homeScroll: 0, openWaves: new Map() };
+  projects.forEach(project => state.openWaves.set(project.id, new Set([project.currentWave])));
+  const visibleProjects = () => projects.filter(project => filters.find(f => f.id === state.filter).match(project) &amp;&amp; matches(project, state.query))
+    .sort((a, b) => Number(attention(b)) - Number(attention(a)));
+  const activeProject = () => projects.find(p => p.id === state.projectId) || projects[0];
+  const projectLink = project => `#project/${encodeURIComponent(project.id)}`;
+  const taskLink = (project, task) => `${projectLink(project)}/task/${encodeURIComponent(task.id)}`;
+  const symbol = status => `<span class=&quot;task-symbol ${esc(status)}&quot; aria-hidden=&quot;true&quot;>${status === 'done' ? icon('check') : ['blocked', 'waiting', 'failed'].includes(status) ? icon('pause') : ''}</span>`;
+  const progress = (summary, label, className = '') => summary.total
+    ? `<progress class=&quot;${className}&quot; value=&quot;${summary.done}&quot; max=&quot;${summary.total}&quot; aria-label=&quot;${esc(label)}：${summary.done}/${summary.total} Task 已完成&quot;></progress>`
+    : '<span class=&quot;unplanned-track&quot; aria-label=&quot;尚未登记任务&quot;></span>';
+
+  function renderNavigation() {
+    $('#primary-nav').innerHTML = filters.filter(f => f.id !== 'active').map(f => `<button type=&quot;button&quot; class=&quot;nav-button ${state.filter === f.id ? 'active' : ''}&quot; data-filter=&quot;${f.id}&quot; aria-pressed=&quot;${state.filter === f.id}&quot;>${icon(f.icon)}<span>${f.nav}</span><span class=&quot;nav-count&quot;>${projects.filter(f.match).length}</span></button>`).join('');
+    $('#side-projects').innerHTML = projects.map(project => `<a class=&quot;side-project ${state.projectId === project.id ? 'selected' : ''}&quot; href=&quot;${projectLink(project)}&quot;><span class=&quot;tiny-dot ${project.status}&quot; aria-hidden=&quot;true&quot;></span>${esc(project.shortName)}</a>`).join('');
+    $('#filters').innerHTML = filters.map(f => `<button type=&quot;button&quot; class=&quot;filter-button ${state.filter === f.id ? 'active' : ''}&quot; data-filter=&quot;${f.id}&quot; aria-pressed=&quot;${state.filter === f.id}&quot;>${f.name}<span>${projects.filter(f.match).length}</span></button>`).join('');
+    $('#overview-summary').textContent = `${projects.filter(p => p.status === 'active').length} 个推进中，${projects.filter(attention).length} 个需关注`;
+  }
+
+  function renderList() {
+    const scroll = $('#project-scroll').scrollTop;
+    const visible = visibleProjects();
+    $('#list-caption').textContent = state.query ? `找到 ${visible.length} 个项目` : `${visible.length} 个项目${state.filter === 'all' ? ' · 需关注优先' : ''}`;
+    $('#project-list').innerHTML = visible.length ? visible.map(project => {
+      const summary = summarize(project);
+      const wave = project.waves.find(w => w.id === project.currentWave);
+      const waveNumber = String(Number(project.currentWave.slice(1))).padStart(2, '0');
+      return `<a role=&quot;listitem&quot; class=&quot;project-row ${state.projectId === project.id ? 'selected' : ''}&quot; href=&quot;${projectLink(project)}&quot; data-project=&quot;${project.id}&quot; data-status=&quot;${project.status}&quot; aria-label=&quot;查看${esc(project.name)}，${statusLabels[project.status]}，${summary.total ? `${summary.done}/${summary.total} Task` : '尚未登记任务'}&quot;>
+        <div class=&quot;row-top&quot;><span class=&quot;project-icon ${project.color}&quot;>${icon(project.glyph)}</span><div class=&quot;row-identity&quot;><strong>${esc(project.name)}</strong><span class=&quot;row-wave&quot;><span class=&quot;wave-code&quot;>WAVE ${waveNumber}</span>${esc(wave.name)}</span></div>${statusTag(project.status)}</div>
+        <p class=&quot;row-summary&quot;>${esc(project.summary)}</p>
+        <div class=&quot;row-bottom&quot;>${progress(summary, project.name)}<span class=&quot;row-count&quot;>${summary.total ? `<b>${summary.done}</b> / ${summary.total}` : '待拆分'}</span><span class=&quot;row-percent&quot;>${summary.percent === null ? '—' : `${summary.percent}%`}</span><span class=&quot;row-updated&quot;>${esc(project.updated)}</span></div>
+      </a>`;
+    }).join('') : `<div class=&quot;empty-state&quot; role=&quot;listitem&quot;>${icon('search')}<h2>没有找到项目</h2><p>${state.query ? `没有与“${esc(state.query)}”匹配的项目或任务。` : '这个筛选条件下暂时没有项目。'}</p><button class=&quot;text-button&quot; type=&quot;button&quot; data-action=&quot;clear-search&quot;>清除筛选</button></div>`;
+    $('#project-scroll').scrollTop = scroll;
+    renderNavigation();
+  }
+
+  function waveMarkup(project, wave, index) {
+    const summary = summarize({ waves: [wave] });
+    const current = project.currentWave === wave.id;
+    const complete = summary.total > 0 &amp;&amp; summary.done === summary.total;
+    const expanded = state.openWaves.get(project.id).has(wave.id);
+    const caption = wave.acceptance === 'pending' ? '实施完成 · 待验收' : current ? '当前阶段' : wave.defined === false ? '后续计划' : complete ? '已完成' : '尚未开始';
+    return `<details class=&quot;wave ${current ? 'current' : ''}&quot; data-wave=&quot;${wave.id}&quot; data-owner=&quot;${project.id}&quot; ${expanded ? 'open' : ''}>
+      <summary aria-label=&quot;Wave ${index + 1} ${esc(wave.name)} ${summary.total ? `${summary.done}/${summary.total}` : '待细化'}&quot;><span class=&quot;wave-number ${current ? 'current' : complete ? 'complete' : ''} ${wave.defined === false ? 'undefined' : ''}&quot;>${complete &amp;&amp; !current ? icon('check') : String(index + 1).padStart(2, '0')}</span><span class=&quot;wave-title&quot;><strong>${esc(wave.name)}</strong><small>${caption}</small></span><span class=&quot;wave-count ${summary.total ? '' : 'text'}&quot;>${summary.total ? `${summary.done} / ${summary.total}` : '待细化'}</span><span class=&quot;wave-chevron&quot;>${icon('chevronRight')}</span></summary>
+      <div class=&quot;wave-body&quot;>${wave.tasks.length ? wave.tasks.map(task => `<a class=&quot;task-row&quot; data-task=&quot;${task.id}&quot; data-status=&quot;${task.status}&quot; href=&quot;${taskLink(project, task)}&quot; aria-label=&quot;查看任务：${esc(task.title)}，${statusLabels[task.status]}&quot;>${symbol(task.status)}<span class=&quot;task-name&quot;>${esc(task.title)}${task.status === 'active' ? '<small class=&quot;task-hint&quot;>正在推进</small>' : task.status === 'waiting' ? '<small class=&quot;task-hint&quot;>等待确认</small>' : ''}</span><span class=&quot;task-code&quot;>${esc(task.code)}</span>${icon('chevronRight', 'task-chevron')}</a>`).join('') : '<div class=&quot;wave-empty&quot;>这个阶段还没有拆分 Task，暂不计入已规划范围。</div>'}</div>
+    </details>`;
+  }
+
+  function projectMarkup(project) {
+    const summary = summarize(project);
+    const ongoing = project.waves.flatMap(w => w.tasks).find(t => ['active', 'waiting', 'blocked'].includes(t.status));
+    const focus = ongoing ? `<a class=&quot;focus-note ${project.status}&quot; href=&quot;${taskLink(project, ongoing)}&quot;><span class=&quot;focus-label&quot;>${project.status === 'blocked' ? '需要你确认' : '当前在做'}${icon('arrowUpRight')}</span><strong>${esc(project.blocker || ongoing.title)}</strong></a>`
+      : summary.pendingAcceptance ? '<div class=&quot;focus-note review&quot;><span class=&quot;focus-label&quot;>等待阶段验收</span><strong>实施工作已完成，可以查看本阶段的交付效果。</strong></div>' : '';
+    return `<div class=&quot;detail-nav&quot;><span class=&quot;desktop-detail-label&quot;>项目详情</span><a class=&quot;back-link mobile-back&quot; href=&quot;#&quot;>${icon('arrowLeft')}全部项目</a><span class=&quot;detail-nav-end&quot;>${icon('eye')}只读</span></div>
+      <div class=&quot;detail-content&quot;><div class=&quot;detail-project-heading&quot;><span class=&quot;project-icon ${project.color}&quot;>${icon(project.glyph)}</span><div class=&quot;detail-title-wrap&quot;><h2 tabindex=&quot;-1&quot;>${esc(project.name)}</h2><span class=&quot;category-label&quot;>${esc(project.category)}</span></div>${statusTag(project.status)}</div>
+      <p class=&quot;detail-description&quot;>${esc(project.description)}</p>
+      <div class=&quot;metric-top&quot;><span>已规划范围</span><div class=&quot;metric-ratio&quot;><span>${summary.total ? `${summary.done} / ${summary.total} Task` : '尚未登记任务'}</span><strong>${summary.percent === null ? '—' : `${summary.percent}<small>%</small>`}</strong></div></div>
+      ${progress(summary, project.name, 'detail-progress')}
+      <div class=&quot;scope-note ${summary.pendingAcceptance ? 'pending' : ''}&quot;>${icon(summary.pendingAcceptance ? 'clock' : 'layers')}<span>${summary.pendingAcceptance ? `${summary.pendingAcceptance} 个验收事项待确认，实施完成度已计入。` : summary.unplannedWaves ? `另有 ${summary.unplannedWaves} 个 Wave 待细化，以上仅统计已规划 Task。` : project.status === 'complete' ? '全部任务已完成，交付检查已通过。' : '按 Task 等权计量，子项不增加任务总数。'}</span></div>
+      ${focus}
+      <div class=&quot;section-heading&quot;><h3>阶段与任务</h3><span>${String(project.waves.length).padStart(2, '0')} WAVES</span></div>
+      <div class=&quot;wave-list&quot;>${project.waves.map((wave, index) => waveMarkup(project, wave, index)).join('')}</div>
+      <div class=&quot;section-heading&quot;><h3>最近进展</h3><span>示例记录</span></div><ol class=&quot;activity-list&quot;>${project.updates.map(update => `<li><time>${esc(update.time)}</time><div><strong>${esc(update.text)}</strong><small>${esc(update.detail)}</small></div></li>`).join('')}</ol>
+      <div class=&quot;detail-end&quot;>最后上报 · ${esc(project.updatedAt)}</div></div>`;
+  }
+
+  function taskMarkup(project, taskId) {
+    const wave = project.waves.find(w => w.tasks.some(t => t.id === taskId));
+    if (!wave) return projectMarkup(project);
+    const task = wave.tasks.find(t => t.id === taskId);
+    const childrenDone = task.children.filter(child => child.status === 'done').length;
+    return `<div class=&quot;detail-nav&quot;><a class=&quot;back-link&quot; href=&quot;${projectLink(project)}&quot;>${icon('arrowLeft')}返回项目</a><span class=&quot;detail-nav-end&quot;>${icon('eye')}任务详情</span></div>
+      <div class=&quot;detail-content&quot;><div class=&quot;task-breadcrumb&quot;>${esc(project.name)}<span class=&quot;sub-dot&quot;> / </span>${esc(wave.name)}</div><h2 class=&quot;task-heading&quot; tabindex=&quot;-1&quot;>${esc(task.title)}</h2><div class=&quot;task-tags&quot;><span class=&quot;task-id&quot;>${esc(task.code)}</span>${statusTag(task.status)}${task.acceptance === 'pending' ? statusTag('review') : ''}</div>
+      <div class=&quot;section-heading&quot;><h3>任务目标</h3></div><p class=&quot;task-copy&quot;>${esc(task.goal)}</p>
+      <div class=&quot;task-update&quot;><div class=&quot;eyebrow&quot;>最近进展</div><p>${esc(task.summary)}</p></div>
+      ${task.blocker ? `<div class=&quot;blocking-callout&quot;><strong>等待确认</strong><br>${esc(task.blocker)}</div>` : ''}
+      ${task.children.length ? `<div class=&quot;section-heading&quot;><h3>子项</h3><span>${childrenDone} / ${task.children.length} 已完成</span></div><ul class=&quot;subtask-list&quot;>${task.children.map(child => `<li class=&quot;${child.status}&quot;>${symbol(child.status)}<span>${esc(child.title)}</span></li>`).join('')}</ul><p class=&quot;fine-note&quot;>子项展示执行细节，这个 Task 始终按 1 个任务计量。</p>` : ''}
+      <div class=&quot;section-heading&quot;><h3>${task.verified ? '完成依据' : '验证与记录'}</h3>${task.verified ? '<span>已通过检查</span>' : ''}</div>
+      ${task.evidence.length ? `<dl class=&quot;evidence-list&quot;>${task.evidence.map(evidence => `<div><dt>${esc(evidence.label)}</dt><dd>${esc(evidence.text)}</dd></div>`).join('')}</dl>` : '<p class=&quot;task-copy&quot;>尚未提交验证结果，完成后由项目侧更新。</p>'}
+      <div class=&quot;task-meta&quot;><div><small>所属阶段</small><span>${esc(wave.name)}</span></div><div><small>最后上报</small><span>${esc(task.updated)}</span></div></div>
+      <div class=&quot;detail-end&quot; style=&quot;margin-top:28px&quot;>示例任务 · 只读查看</div></div>`;
+  }
+
+  function renderDetail() {
+    const panel = $('#detail-panel');
+    if (!visibleProjects().length &amp;&amp; state.view === 'home') {
+      panel.innerHTML = `<div class=&quot;empty-state&quot;>${icon('layers')}<h2>选择一个项目</h2><p>项目的阶段、任务和最近进展会显示在这里。</p></div>`;
+      return;
+    }
+    const project = activeProject();
+    panel.innerHTML = state.view === 'task' ? taskMarkup(project, state.taskId) : projectMarkup(project);
+  }
+
+  function applyRoute(initial = false) {
+    let parts;
+    try { parts = location.hash.replace(/^#/, '').split('/').map(decodeURIComponent); } catch { parts = []; }
+    const oldView = state.view;
+    const routeProject = parts[0] === 'project' ? projects.find(p => p.id === parts[1]) : null;
+    if (routeProject) {
+      state.projectId = routeProject.id;
+      state.view = parts[2] === 'task' &amp;&amp; routeProject.waves.some(w => w.tasks.some(t => t.id === parts[3])) ? 'task' : 'project';
+      state.taskId = state.view === 'task' ? parts[3] : null;
+    } else { state.view = 'home'; state.taskId = null; }
+    document.body.dataset.view = state.view;
+    renderList(); renderDetail();
+    $('#detail-panel').scrollTop = 0;
+    document.title = state.view === 'home' ? '进度簿 · 项目总览' : `${activeProject().name} · 进度簿`;
+    if (!initial &amp;&amp; matchMedia('(max-width: 1000px)').matches) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, state.view === 'home' ? state.homeScroll : 0);
+        if (state.view !== 'home' &amp;&amp; oldView !== state.view) $('#detail-panel h2')?.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  function updateFilter(id) {
+    state.filter = id;
+    const visible = visibleProjects();
+    if (visible.length &amp;&amp; !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
+    if (location.hash) location.hash = '';
+    state.view = 'home'; state.taskId = null; document.body.dataset.view = 'home';
+    renderList(); renderDetail();
+  }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^=&quot;#&quot;]');
+    if (link &amp;&amp; state.view === 'home' &amp;&amp; link.getAttribute('href').startsWith('#project/')) state.homeScroll = window.scrollY;
+    if (link &amp;&amp; link.dataset.action !== 'skip') {
+      // srcdoc inherits its parent's base URL; set the fragment on this document.
+      event.preventDefault();
+      const next = link.getAttribute('href');
+      if (location.hash === next || (next === '#' &amp;&amp; !location.hash)) applyRoute();
+      else location.hash = next;
+    }
+    const filter = event.target.closest('[data-filter]');
+    if (filter) {
+      const fromSidebar = Boolean(filter.closest('#primary-nav'));
+      updateFilter(filter.dataset.filter);
+      (fromSidebar ? $('#primary-nav') : $('#filters')).querySelector(`[data-filter=&quot;${state.filter}&quot;]`)?.focus({ preventScroll: true });
+    }
+    const action = event.target.closest('[data-action]')?.dataset.action;
+    if (action === 'rules') $('#rules-dialog').showModal();
+    if (action === 'close-rules') $('#rules-dialog').close();
+    if (action === 'skip') { event.preventDefault(); $('#main-content').focus(); }
+    if (action === 'clear-search') { state.query = ''; $('#project-search').value = ''; updateFilter('all'); $('#project-search').focus(); }
+    const scenario = event.target.closest('[data-scenario]')?.dataset.scenario;
+    if (scenario) {
+      state.scenario = scenario;
+      $('#offline-banner').hidden = scenario !== 'offline';
+      $('#snapshot-label').textContent = scenario === 'offline' ? '离线 · 保留示例快照' : '示例快照 · 今天 14:38';
+      document.querySelectorAll('[data-check]').forEach(node => { node.textContent = node.dataset.check === scenario ? '✓' : ''; });
+      $('#demo-menu').open = false;
+    } else if (!event.target.closest('#demo-menu')) $('#demo-menu').open = false;
+    if (event.target === $('#rules-dialog')) {
+      const bounds = $('#rules-dialog').getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) $('#rules-dialog').close();
+    }
+  });
+  document.addEventListener('toggle', event => {
+    if (event.target.matches?.('details[data-wave]') &amp;&amp; event.target.isConnected) {
+      const open = state.openWaves.get(event.target.dataset.owner);
+      if (event.target.open) open.add(event.target.dataset.wave); else open.delete(event.target.dataset.wave);
+    }
+  }, true);
+  $('#project-search').addEventListener('input', event => {
+    state.query = event.target.value;
+    const visible = visibleProjects();
+    if (visible.length &amp;&amp; !visible.some(p => p.id === state.projectId)) state.projectId = visible[0].id;
+    state.taskId = null;
+    if (state.view === 'task') state.view = 'project';
+    document.body.dataset.view = state.view;
+    renderList(); renderDetail();
+  });
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) &amp;&amp; event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      if (matchMedia('(max-width: 1000px)').matches &amp;&amp; state.view !== 'home') { location.hash = ''; setTimeout(() => $('#project-search').focus(), 0); }
+      else $('#project-search').focus();
+    }
+    if (event.key === 'Escape') $('#demo-menu').open = false;
+  });
+  window.addEventListener('hashchange', () => applyRoute());
+  $('#date-label').textContent = dateLabel;
+  $('#heading-count').textContent = projects.length;
+  fillIcons(); applyRoute(true);
+})();
+</script>
+</body>
+</html>
+"></iframe></main><script>document.querySelector('#preview-width').addEventListener('change',function(){document.querySelector('#phone').style.width=this.value+'px'});</script></body></html>
