@@ -136,7 +136,7 @@ def atomic_json(path, data):
 
 def load_config(path):
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8-sig"))
         if not isinstance(data, dict) or set(data) != {"working_directory", "runtime_directory", "environment", "components"}:
             raise ValueError
         working = Path(data["working_directory"])

@@ -39,11 +39,13 @@ if (Test-Path -LiteralPath $Runtime) {
 New-Item -ItemType Directory -Path $Runtime -Force | Out-Null
 $sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 function Set-PrivateAcl([string]$Path, [bool]$Directory) {
-    $acl = if ($Directory) { [System.Security.AccessControl.DirectorySecurity]::new() }
-           else { [System.Security.AccessControl.FileSecurity]::new() }
+    # Change only the DACL; a fresh descriptor can require SACL/owner privileges
+    # on a previously protected directory in Windows PowerShell.
+    $acl = Get-Acl -LiteralPath $Path
     $acl.SetAccessRuleProtection($true, $false)
-    $owner = [System.Security.Principal.SecurityIdentifier]::new($sid)
-    $acl.SetOwner($owner)
+    foreach ($existingRule in @($acl.Access)) {
+        $acl.RemoveAccessRuleSpecific($existingRule)
+    }
     foreach ($identityValue in @($sid, 'S-1-5-18')) {
         $identity = [System.Security.Principal.SecurityIdentifier]::new($identityValue)
         if ($Directory) {
@@ -60,7 +62,8 @@ function Set-PrivateAcl([string]$Path, [bool]$Directory) {
         }
         $acl.AddAccessRule($rule)
     }
-    Set-Acl -LiteralPath $Path -AclObject $acl
+    if ($Directory) { [System.IO.Directory]::SetAccessControl($Path, $acl) }
+    else { [System.IO.File]::SetAccessControl($Path, $acl) }
 }
 Set-PrivateAcl $Runtime $true
 foreach ($entry in @(Get-ChildItem -LiteralPath $Runtime -Force)) {

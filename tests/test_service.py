@@ -34,6 +34,13 @@ def process_exists(pid):
 
 @unittest.skipUnless(os.name == "nt", "Windows Job Object supervisor; Linux uses systemd")
 class ServiceTests(unittest.TestCase):
+    def test_powershell_utf8_bom_configuration_is_accepted(self):
+        self.write_config([{"name": "app", "command": [sys.executable, "-c", "pass"]}])
+        self.config.write_bytes(b"\xef\xbb\xbf" + self.config.read_bytes())
+        result = self.call("status")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(json.loads(result.stdout)["running"])
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
