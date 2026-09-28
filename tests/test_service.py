@@ -32,6 +32,7 @@ def process_exists(pid):
         ctypes.windll.kernel32.CloseHandle(handle)
 
 
+@unittest.skipUnless(os.name == "nt", "Windows Job Object supervisor; Linux uses systemd")
 class ServiceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()

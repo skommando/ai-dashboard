@@ -54,7 +54,7 @@ class SourceTests(unittest.TestCase):
 
     def test_paths_reject_control_characters_and_nonabsolute_values(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            root = Path(Path(directory).anchor) / "dashboard-path-tests"
             self.assertEqual(vps.validate_path(root / "app"), root / "app")
             for path in (Path("relative/path"), root / "bad\npath", root / "space path",
                          root / "bad;include", root / "bad#comment", root / "bad{brace}", root / ".."):

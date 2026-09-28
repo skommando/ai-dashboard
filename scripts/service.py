@@ -476,6 +476,9 @@ def _hidden_startupinfo():
 
 
 def main():
+    if os.name != "nt":
+        print("This supervisor requires Windows Job Objects; use tools/start.sh and systemd on Linux.", file=sys.stderr)
+        return 2
     if len(sys.argv) == 2 and sys.argv[1] == "_child":
         return launch_owned_component()
     parser = argparse.ArgumentParser(description="Local dashboard service supervisor")
