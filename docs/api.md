@@ -1,93 +1,167 @@
-# 本机进度上报 API
+# 项目进度 API 接入规范
 
-本轮服务使用 Python 3.12、FastAPI 和 SQLite。读取与写入是两个独立应用：读取端 `127.0.0.1:8810` 使用 Basic Auth；写入端 `127.0.0.1:8811` 按项目使用 Bearer token。只有读取端适合被本项目的 frp/Nginx 配置转发。运行数据库、凭据和请求文件应放在不提交到 Git 的 `.runtime/`，正式前端由独立构建输出到 `web/index.html`。空数据库返回 `{"projects":[],"server_time":"..."}`，不会加载示例项目。
+版本：API v1 / `schema_version=1`。适用对象：项目服务、脚本及负责更新进度的 AI agent。源码中的 OpenAPI 是字段约束的机器可读契约；本文说明接入顺序、语义与错误处理。
 
-## 安装与启动
+## 1. 服务地址与凭据
 
-在 Python 3.12 虚拟环境中运行 `python -m pip install -r requirements.txt`；测试还需 `python -m pip install -r requirements-dev.txt`。先初始化数据库，再为每个项目单独登记：
+生产基址由管理员提供，例如 `https://dashboard.example.com`；不要直接照抄示例域名。开发可用 `http://127.0.0.1:8810`。生产禁止明文 HTTP，不忽略 TLS 证书校验，不跟随携带凭据请求的重定向。
 
-```powershell
-python -m dashboard.manage init --db .runtime/dashboard.sqlite3
-python -m dashboard.manage register my-project --db .runtime/dashboard.sqlite3 --token-file .runtime/my-project.token
+| 配置 | 由谁提供 | 用途与存放 |
+| --- | --- | --- |
+| `base_url` | 管理员 | 已部署服务的 HTTPS 基址，无额外路径 |
+| `project_id` | 管理员与接入方约定 | 稳定项目标识，不能以每次运行的临时名称替代 |
+| Basic 用户名、密码 | 管理员私下提供；人工写入 | 所有端点均需要；放仓库外的凭据JSON或环境变量 |
+| 项目令牌 | 管理员登记项目后私下提供；人工写入 | 仅对应项目的上报与版本查询；独立令牌文件或环境变量 |
+
+Basic 文件格式为 `{"username":"<人工填写>","password":"<人工填写>"}`；项目令牌文件只含令牌。占位符不能直接使用。禁止把真实值写入源码、快照、请求封存文件、Git、日志、Issue或命令参数。文件路径可以出现在命令中，文件内容不能打印。
+
+请求头：
+
+| Header | 必需范围 | 说明 |
+| --- | --- | --- |
+| `Authorization: Basic <base64(username:password)>` | 全部 | Base64不是加密，安全性依赖HTTPS；用户名/密码为UTF-8 |
+| `X-Project-Token: <项目令牌>` | revision GET、snapshot PUT | 与Basic同时校验，不能用Bearer替代 |
+| `Idempotency-Key` | snapshot PUT | 1–128字符；字母/数字开头，其后可含字母、数字、点、下划线、横线和冒号 |
+| `Content-Type: application/json` | snapshot PUT | UTF-8 JSON，最大1 MiB |
+
+项目注册与令牌轮换没有公网端点。管理员在VPS应用环境执行 `python -m dashboard.manage register <project_id> --db <私有数据库路径> --token-file <私有新令牌文件>`；显式轮换用 `rotate`。登记不会覆盖已有项目；令牌文件必须为新文件，命令不会输出令牌。数据库只保存令牌哈希，轮换立即使旧令牌失效。
+
+## 2. 端点总览
+
+路径均相对于 `base_url`。
+
+| 方法与路径 | 认证 | 作用 | 成功响应 |
+| --- | --- | --- | --- |
+| `GET /` | Basic | 手机/桌面只读页面 | HTML |
+| `GET /healthz` | Basic | 服务探测 | `{"status":"ok"}` |
+| `GET /api/v1/projects` | Basic | 全部已上报项目及服务时间 | `{projects:[ProjectView],server_time:"..."}` |
+| `GET /api/v1/projects/{project_id}` | Basic | 单个项目最近快照视图 | `ProjectView` |
+| `GET /api/v1/projects/{project_id}/revision` | Basic + 项目令牌 | 查询当前版本，首次未上报为0 | `{project_id:"...",revision:0}` |
+| `PUT /api/v1/projects/{project_id}/snapshot` | Basic + 项目令牌 | 原子替换该项目完整快照 | `{project_id,revision,received_at,replayed}` |
+| `GET /openapi.json`、`GET /docs` | Basic | JSON契约、交互文档 | OpenAPI JSON / HTML |
+
+路径参数 `project_id` 为1–80字符，首位字母或数字，其后可含字母、数字、点、横线和下划线。必须匹配管理员登记的ID与令牌。未知项目的读取返回404，未登记/错误令牌不能上报。
+
+## 3. 快照请求体
+
+PUT 是**全量替换**，不是增量合并；遗漏旧Wave/Task会使其不再出现在最新快照，更新前必须以本项目完整且真实的计划为依据。
+
+| 顶层参数 | 类型 | 必需 | 说明 |
+| --- | --- | --- | --- |
+| `schema_version` | integer | 是 | 固定为1 |
+| `expected_revision` | integer | 是 | 当前已知版本，≥0；CAS校验防止旧数据覆盖 |
+| `observed_at` | string | 是 | 本次观察时间，含时区ISO 8601 |
+| `change_note` | string | 是 | 本次变化摘要，最多2000字符；不含凭据 |
+| `project` | object | 是 | 完整Project，见下表 |
+
+### Project
+
+| 参数 | 类型 / 默认 | 说明 |
+| --- | --- | --- |
+| `name` | string，必需 | 非空，最多160字符 |
+| `shortName`, `category` | string / 空 | 最多240字符 |
+| `description`, `summary` | string / 空 | 目标、项目概述，各最多2000字符 |
+| `status` | enum / `planning` | `planning`、`active`、`blocked`、`review`、`complete` |
+| `acceptance` | enum / `not_required` | `not_required`、`pending`、`accepted`、`rejected` |
+| `glyph` | enum / `grid` | `grid`、`book`、`receipt`、`image`、`bookmark`、`globe`、`monitor` |
+| `color` | enum / `stone` | `sage`、`sand`、`plum`、`blue`、`stone` |
+| `currentWave` | string或null / null | 当前Wave ID，非null时必须已存在 |
+| `blocker` | string或null / null | 阻塞说明，最多2000字符 |
+| `waves` | array / [] | 最多200个Wave |
+| `updates` | array / [] | 最近进展记录，最多100条；只保留要展示的窗口 |
+
+### Wave、Task、子项与依据
+
+| 对象 | 参数 | 类型 / 默认 | 说明 |
+| --- | --- | --- | --- |
+| Wave | `id`, `name` | string，必需 | ID规则同project_id；name非空且≤160字符 |
+| Wave | `defined` | boolean / true | false表示尚未细化，此时tasks必须为空 |
+| Wave | `acceptance` | enum / not_required | 同Project验收枚举 |
+| Wave | `tasks` | array / [] | 全项目合计最多5000个Task |
+| Task | `id`, `title` | string，必需 | ID全项目唯一；title非空且≤160字符 |
+| Task | `code` | string / 空 | 展示编号，≤240字符 |
+| Task | `status` | enum / todo | todo、active、waiting、blocked、done、failed、cancelled |
+| Task | `verified` | boolean / false | 验证是否通过；done必须true且有evidence |
+| Task | `acceptance` | enum / not_required | 同Project验收枚举 |
+| Task | `goal`, `summary` | string / 空 | 任务目标与具体工作概述，各≤2000字符 |
+| Task | `updatedAt` | string或null / null | 含时区ISO时间 |
+| Task | `blocker` | string或null / null | 阻塞说明，≤2000字符 |
+| Task | `evidence` | array / [] | 最多100条，每条label非空≤240，text非空≤2000 |
+| Task | `children` | array / [] | 最多100个子项；每项title必需、非空≤160；status同Task，默认todo |
+| Update | `at`, `tone`, `text` | string，必需 | at为含时区ISO时间；tone为todo/active/waiting/blocked/done/failed/review/complete；text≤2000 |
+| Update | `detail` | string / 空 | ≤2000字符 |
+
+所有对象拒绝未知字段、重复JSON键及类型错误。Wave ID项目内唯一；Task ID整个项目内唯一。不要传主观计算的percent，服务根据任务事实计算。
+
+### 任务文字标准
+
+- `goal`：要解决的问题、影响的使用场景和预期结果，不只重复标题。
+- `summary`：截至目前具体做了什么，按主要事项列出工作及结果，通常2–5项，简单任务可1项。用 `•` 或编号和换行分隔，页面保留分行；这是纯文本，不解释HTML/Markdown。
+- 明确“已完成 / 进行中 / 待完成”。每次更新保留已完成的主要工作，不能用最新验收句子覆盖全部概述；同一Wave的各Task分别说明，不套用同一句结论。
+- 说明功能、流程、体验或交付物，不逐文件、函数或代码修改列清单。测试与验收依据写入evidence，阻塞写入blocker。证据不足时明确“工作明细待补充”，不能编造。
+
+完整可验证样例见 [sample-snapshot.json](../examples/sample-snapshot.json)。示例只解释格式，不代表你的项目已经完成这些工作。
+
+## 4. 响应与计量
+
+首次成功PUT例子：
+
+```json
+{"project_id":"my-project","revision":1,"received_at":"2026-09-28T08:00:00Z","replayed":false}
 ```
 
-`register` 只在新项目上成功，不会静默替换已登记 token，也不会向终端输出 token。令牌原文只写入指定的全新文件；SQLite 保存 SHA-256 哈希。需要轮换时显式执行：
+同一幂等键和相同内容重试会返回原revision/received_at，`replayed=true`，不会新增版本。整个快照、版本、事件和回执在同一个SQLite事务提交，重启不丢失已成功回执。
 
-```powershell
-python -m dashboard.manage rotate my-project --db .runtime/dashboard.sqlite3 --token-file .runtime/my-project-new.token
+ProjectView含原Project字段，以及 `id`、`revision`、`receivedAt`（服务接收时间）、`observedAt`（上报观察时间）、`progress`。读取时间被规范化为浏览器可解析的ISO表示，存储与幂等内容哈希不受影响。
+
+```json
+{"done":3,"total":4,"percent":75,"unplannedWaves":1,"pendingAcceptance":0}
 ```
 
-轮换成功后旧 token 立即失效。请保护令牌文件的本机访问权限，更新项目侧凭据后再处理旧文件。CLI 不会删除旧文件。
+Task等权：`cancelled`退出分母，子项不计数；done且verified的Task计完成。percent四舍五入，零分母为null；未细化Wave单列。验收与实施分开。Project标complete要求存在Task且全部完成、无未细化Wave、无pending/rejected验收。
 
-读写进程使用相同的 `DASHBOARD_DB_PATH`。读取进程还使用 `DASHBOARD_WEB_DIR`、`DASHBOARD_VIEW_USERNAME`、`DASHBOARD_VIEW_PASSWORD`。读取口令缺失时拒绝启动。环境变量由本机忽略的运行配置提供，不要把真实值写进 Git 或命令记录。默认数据库路径为 `.runtime/dashboard.sqlite3`，默认前端目录为 `web`。
+## 5. 错误和重试
 
-```powershell
-python -m dashboard.server --role read --host 127.0.0.1 --port 8810
-python -m dashboard.server --role write --host 127.0.0.1 --port 8811
+应用错误格式：
+
+```json
+{"error":{"code":"revision_conflict","message":"expected_revision differs from current revision"},"current_revision":2}
 ```
 
-服务只允许绑定 `127.0.0.1`。读取服务的 `/`、`/healthz`、`/api/v1/projects`、`/api/v1/projects/{id}` 均要求 Basic Auth，所有响应标记 `Cache-Control: no-store`。未上报项目的单项查询返回 404。读取应用不注册写入路由、`/docs` 或 `/openapi.json`。写入应用提供无鉴权的通用 `/healthz`，以及本机 `/docs`、`/openapi.json`。
+| HTTP | 常见含义 | 接入方动作 |
+| --- | --- | --- |
+| 401 | Basic缺失/错误，或项目令牌缺失/错误/不匹配 | 停止重试，核对两种凭据；Basic错误可能由Nginx返回HTML |
+| 404 | 项目尚无快照或路径不存在 | 核对ID；首次上报前用revision端点，不靠404推断版本 |
+| 409 | `revision_conflict`或`idempotency_conflict` | 读取最新版本/快照，核对其他写者与真实范围，再创建新快照和新键；不能只把版本号改大重发 |
+| 413 | 超过1 MiB | 缩减内容，不能删除必要计划来假造进度 |
+| 415 | Content-Type不支持 | 使用application/json |
+| 422 | 参数/快照/幂等键校验失败 | 按OpenAPI修正类型、字段、标识、完成依据等 |
+| 5xx、网络超时 | 服务/代理/网络暂时不可用 | 有限退避，原请求体与原幂等键重试；不能假设失败就没有入库 |
 
-写入端 OpenAPI 的 `components/schemas` 包含完整快照模型，所有本地 `$ref` 都可从文档根解析。快照 PUT 与 revision GET 均声明 Bearer 认证；快照 PUT 另声明必填 `Idempotency-Key` 请求头，因此可在本机 `/docs` 直接填写认证与幂等键后调用。
+所有响应不可缓存。不要记录带认证头的完整请求；错误处理不能输出凭据。反向代理可能返回HTML错误，客户端应首先识别HTTP状态，不假设每个错误都是JSON。
 
-读取端 Basic Auth 按 UTF-8 处理用户名和密码，401 挑战头也声明 UTF-8；Unicode 凭据与 ASCII 凭据均可使用。
+## 6. 标准库客户端与AI执行步骤
 
-## 快照格式与计量
-
-示例文件为 [sample-snapshot.json](../examples/sample-snapshot.json)。`PUT /api/v1/projects/{project_id}/snapshot` 请求头必须有 `Authorization: Bearer <该项目token>`、`Idempotency-Key: <稳定且唯一的请求ID>` 与 `Content-Type: application/json`。请求体最大 1 MiB，`schema_version` 固定为 1。JSON 拒绝未知字段、重复键和错误类型；日期必须为含时区的 ISO 8601 时间。项目 ID、Wave ID、Task ID 为 1–80 位稳定标识，首位字母或数字，其余可含点、横线、下划线。`Idempotency-Key` 为 1–128 位同类可打印标识，额外允许冒号。
-
-`project.name`、Wave 名、Task 标题和子项标题必填非空。其他说明文字允许空串：短文字最多 240 字符，说明/正文最多 2000 字符，名称最多 160 字符。`waves` 最多 200 个，项目内 Task 合计最多 5000 个，每 Task 子项最多 100 个，`updates` 最多 100 条；每 Task evidence 最多 100 条。`waves`、`tasks`、`children`、`evidence`、`updates` 默认空数组。`status` 默认 `planning`（Task/子项为 `todo`）；`acceptance` 默认 `not_required`；`defined` 默认 `true`；`verified` 默认 `false`；`glyph` 默认 `grid`；`color` 默认 `stone`；一般说明文字默认空串，证据 label 和 text 则必须非空。其他字段和枚举以本机 OpenAPI 为准。
-
-Wave ID 在项目内唯一，Task ID 在整个项目内唯一；`currentWave` 为 `null` 或现有 Wave ID。`defined=false` 的 Wave 没有 Task。`done` Task 必须 `verified=true` 且至少有一条 evidence。项目标为 `complete` 时，必须有非零个有效 Task 且全部完成，没有待细化 Wave 或待处理的验收（`pending`/`rejected`）。`cancelled` Task 退出分母；子项不计数。`progress.done` 为已验证的 `done` Task 数，`progress.total` 为未取消 Task 数，`percent` 对 `done/total*100` 四舍五入，零分母时为 `null`。`unplannedWaves` 单独计算，`pendingAcceptance` 统计项目、Wave 和已完成 Task 的待验收项。实施进度、验收与上报新鲜度是独立信息。
-
-成功响应是 `{"project_id":"my-project","revision":1,"received_at":"...","replayed":false}`。`GET /api/v1/projects/{id}/revision` 使用同一项目 token，登记后未上报时返回 revision 0。读取端的 ProjectView 使用原始 `project` 业务字段及 `id`、`revision`、`receivedAt`、`observedAt`、`progress`；`receivedAt` 是服务接收时间，`observedAt` 是上报方观察时间。读取视图会将已验证的 `observedAt`、Task `updatedAt` 和更新记录 `at` 转为浏览器可解析的扩展 ISO 格式；存储快照与幂等请求哈希不受此显示转换影响。
-
-## 任务详情怎么写
-
-任务详情中的“任务目标”读取 `task.goal`，“最近进展”读取 `task.summary`。看板原样展示上报内容，不会从验收日期或证据路径自动生成工作说明。两者最多各2000字符，支持换行，作为纯文本显示；使用 `•` 或数字分点即可，无需 Markdown 或 HTML。
-
-- **goal：要达成什么。** 写清解决的问题、影响的功能或使用场景、预期结果，不只重复标题。
-- **summary：截至目前具体做了什么。** 按主要工作事项列出，通常2–5项，简单任务可1项。每项写“做了什么 + 带来的结果或影响”，粒度为功能、流程、体验或交付物，不逐文件、函数或代码修改罗列。
-- **状态要准确。** 用“已完成 / 进行中 / 待完成”区分事实；新快照保留已完成的主要工作，再更新新增结果及剩余事项。不要用最后一次验收结论覆盖整个任务的工作概述。
-- **依据另记。** 日期、测试范围及结果、验收结论、证据路径放在 `evidence`；阻塞原因放在 `blocker`。关键验收结论也可在 summary 末尾简述，但不能替代主要工作说明。
-- **以项目事实为准。** 同一 Wave 的各 Task 应分别说明自己的工作，不批量套用同一句验收文案。证据不足时明确写“工作明细待补充”，不能为了凑条数编造内容。该口径不改变进度计量，也不强制拒绝已有的简短报告。
-
-例如，“2026-09-21联合验收通过；R4主观体验并入GRW6。”只说明验收与后续安排，不能说明这个 Task 具体做了什么。应由来源项目查阅对应任务记录，补齐主要工作后重新上报。格式示例见 [sample-snapshot.json](../examples/sample-snapshot.json)；其中内容仅作格式演示，不应直接套用到其他项目。
-
-可将以下要求交给负责上报的项目 agent：
-
-> 上报前逐项核对 Task：goal 说明目标与预期结果；summary 根据本项目的任务记录、实现和验证事实，按主要事项列出具体工作与结果，通常2–5项，简单任务可1项，用换行分隔，不逐文件或函数罗列。保留已完成的主要工作，明确区分已完成、进行中和待完成；不得仅写“验收通过”、日期、阶段代号，也不得给同阶段所有任务套用相同总结。将检查和验收依据放进 evidence，缺少事实时明确说明。先更新项目自身的上报数据源，再读取最新 revision，用新请求文件和幂等键重新上报，避免后续脚本覆盖回旧文案。
-
-## 稳定上报与冲突处理
-
-上报前复制示例并填写真实项目状态及当前 `expected_revision`，然后用标准库客户端封存请求。`prepare` 会将项目 ID、快照和幂等键写入新的请求文件；这份文件是网络故障后的重试依据，不能在重试期间改写。
+`clients/report_progress.py` 可通过绝对路径从其他项目调用，无需安装看板依赖。以下从仓库根执行；路径为示例，将它们换成仓库外的真实私有路径：
 
 ```powershell
-python clients/report_progress.py prepare my-project --snapshot .runtime/snapshot.json --request-file .runtime/request-001.json
-python clients/report_progress.py send --request-file .runtime/request-001.json --token-file .runtime/my-project.token
+# 1. 查询当前revision（登记后未上报为0）
+python clients/report_progress.py revision my-project --base-url https://dashboard.example.com --basic-auth-file <私有Basic文件> --token-file <私有项目令牌文件>
+
+# 2. 更新项目自身的数据源，填写完整快照及刚确认的expected_revision
+# 3. 封存为新的请求文件，不把凭据放进该文件
+python clients/report_progress.py prepare my-project --snapshot <快照文件> --request-file <新的请求文件>
+
+# 4. 发送；超时后重复这条命令，继续用原请求文件
+python clients/report_progress.py send --base-url https://dashboard.example.com --basic-auth-file <私有Basic文件> --token-file <私有项目令牌文件> --request-file <请求文件>
 ```
 
-也可使用 `--token-env 环境变量名` 读取令牌。客户端只允许 `http://127.0.0.1:<端口>` 写入地址，不跟随 HTTP 重定向，也不经代理发送令牌。`send` 对网络故障与 HTTP 5xx 采用有限退避重试，每次使用同一请求体和幂等键。超时或响应丢失后，重复运行同一 `send --request-file`；成功回执会从 SQLite 持久化重放，`replayed=true`，不会重复增加 revision 或事件。令牌错误 401、无效快照 422 和冲突 409 立即停止。
+也可使用 `--basic-user-env <变量名> --basic-password-env <变量名> --token-env <变量名>`，只在命令参数中传变量名。不要把文件和环境凭据方式混用。`--retries`为0–10，默认4；只对网络问题和5xx重试，4xx立即停止。请求不经环境代理、不跟随重定向。
 
-每次**新快照**读取当前 revision，创建新的请求文件和幂等键。若 409 携带 `current_revision`，先查询最新 revision/读取页面并人工核对其他写者的内容，再基于实际最新范围编辑快照及新 `expected_revision`。客户端不会把过期快照自动改成最新 revision。相同键配不同内容也返回 409。项目 token 必须与 URL 中的项目 ID 对应，不能跨项目重放。
+AI接入检查单：领取配置 → 查询版本 → 从源项目记录整理事实 → 核对goal/summary → 检查全量范围和done依据 → prepare新文件 → send → 读取服务快照确认revision/任务内容。遇到缺少凭据或工作证据应明确说明，不能猜测或编造。
 
-服务把完整快照、revision、事件和回执放在同一个 SQLite 事务里，启用 WAL、busy timeout 与 `synchronous=FULL`。成功后保留最近快照、所有简短事件和幂等回执；当前版本不提供全量历史版本回滚。错误采用结构化 JSON，例如 `{"error":{"code":"revision_conflict","message":"..."},"current_revision":2}`，不包含凭据或本机路径。
+## 7. 从旧本机服务迁移
 
-后端测试：`python -m unittest tests.test_backend tests.test_cli -v`。
+生产应用与SQLite现位于VPS，开发电脑关闭不影响查看。现有项目ID、令牌哈希、快照、revision和幂等回执通过数据库迁移保留；未被要求轮换的项目令牌可继续使用。
 
-## 为另一个本机项目接入
-
-在本仓库根目录、使用本项目虚拟环境，先登记一个稳定项目 ID。以下 `my-project` 只是占位，需替换为真实项目。
-
-```powershell
-.\.venv\Scripts\python.exe -m dashboard.manage register my-project --db .runtime/dashboard.sqlite3 --token-file .runtime/credentials/my-project.token
-```
-
-将 `examples/sample-snapshot.json` 复制到该项目自己的工作目录，填写真实计划和状态；第一次上报 `expected_revision` 为 0。后续可这样查询版本（不会输出令牌）：
-
-```powershell
-$projectToken = (Get-Content -Raw .runtime/credentials/my-project.token).Trim()
-Invoke-RestMethod -Uri 'http://127.0.0.1:8811/api/v1/projects/my-project/revision' -Headers @{ Authorization = "Bearer $projectToken" }
-```
-
-用 `prepare` 把本次快照封存成一个新请求文件，再调用 `send`；网络重试继续发送原文件。客户端是独立的标准库 Python 脚本，其他项目可用其绝对路径调用，无需引入本看板的 Python 包。远程手机只访问查看域名，不持有项目上报 token，也不能用查看账号写入进度。
+接入方需要：更新客户端；将旧 `http://127.0.0.1:8811` 改为管理员提供的HTTPS基址；补充Basic凭据；项目令牌改发 `X-Project-Token`。不要再发送 `Authorization: Bearer`。本轮不自动修改其他项目仓库。迁移后先查询revision，不能从0重建已有项目。

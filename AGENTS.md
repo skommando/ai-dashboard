@@ -2,13 +2,13 @@
 
 ## 项目与当前范围
 
-- 仓库：`D:\example-user\repos\ai-dashboard`；当前开发主机为 Windows，命令环境为 PowerShell。
-- 目标：方便用户通过 iPhone 远程查看本机运行的多个项目，统一呈现各项目进度。
+- 仓库路径以当前工作目录为准，不记录用户主机的绝对路径。支持 Windows PowerShell 开发和 Linux VPS 部署。
+- 目标：方便用户通过 iPhone 远程查看多个项目主动上报的进度。
 - 已确定按 Task 等权计量，子项不增加分母；各项目使用 HTTP API（OpenAPI 描述）上报原子快照，以 revision 和幂等键防止旧报告覆盖与重复写入。本轮未实现 MCP。
 - 查看端需要直观、友好并适配手机与桌面。是否另需命令行终端界面尚未确认，不把“终端兼容”直接解释为必须实现 TUI。
-- 当前实现为 Python 3.12 + FastAPI + SQLite 与原生前端。`web/index.html` 读取真实数据；`demo/index.html` 和 `demo/mobile.html` 保留离线样例。运行配置、数据库、令牌和日志统一置于忽略的 `.runtime/`。
+- 当前实现为 Python 3.12 + FastAPI + SQLite 与原生前端。`web/index.html` 读取真实数据；`demo/index.html` 和 `demo/mobile.html` 保留离线样例。生产运行配置、数据库与凭据在 VPS `/opt/ai-dashboard/shared`，开发运行数据在仓库外私有目录。
 - 入口：`node scripts/build-demo.cjs` 构建；`node --test tests/*.cjs` 和 `.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v` 检查规则；浏览器脚本为 `scripts/check-demo.cjs`、`scripts/check-live.cjs`（需 Playwright/Chromium）。本机服务用 `scripts/service.py run|status|stop --config .runtime/service.json` 管理，详见运行文档。
-- 当前用户已授权本机及 `dashboard.example.com` 的只读部署。读取8810与上报8811独立绑定回环；VPS专用frps控制8072，代理8083仅回环。公网只转发读取，保留HTTPS/Basic Auth。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
+- 当前用户已授权统一服务迁往 VPS、数据库迁移、取消本应用隧道及安全公开 GitHub 仓库。统一应用回环8810，所有请求需Basic Auth，版本查询和上报另需X-Project-Token。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
 
 ## 文档入口与裁决
 
@@ -17,7 +17,7 @@
 - `demo/README.md`：demo 使用、源码、构建与验证；`docs/superpowers/specs/2026-09-28-progress-dashboard-design.md`：已确认的展示口径；`docs/verification/`：实际验证证据。
 - 项目内裁决顺序：用户当前明确指令与有效授权 → 本文件 → 已批准的设计和计划 → README 与研究记录。研究建议不等于批准实施的方案；更高优先级的运行环境和工具约束仍然适用。
 - 修改已有 `AGENTS.md` 或其他 agent 专用约定需要明确授权；普通文档、实现和必要检查在任务范围内自主处理。
-- 当前后端与上线检查点位于 `docs/superpowers/plans/2026-09-28-live-dashboard.md`；契约为同名 `docs/superpowers/specs/2026-09-28-live-dashboard-contract.md`。demo 计划保留为历史记录。
+- 当前实施检查点为 `docs/superpowers/plans/2026-09-28-vps-production.md`，设计为同名 specs 文档；旧本机部署与demo计划仅保留为已匿名化的历史记录。
 
 ## 交互、范围与授权
 
@@ -50,7 +50,8 @@
 
 ## Git、检查点与恢复
 
-- 初始默认分支为 `main`；未配置远端。后续分支、PR 和发布流程按实际任务确定，不强制每个任务新建工作树。
+- `dev` 为开发迭代分支，`main` 为生产分支；源码同步GitHub。先本地验证和必要独立审查，再推dev并确认CI，合入main后按固定SHA发布。用户确认通过验证即可发布，不需重复确认。只有用户明确要求才可跳过测试，并记录原因。
+- `tools/`提供启动和停止入口。配置、数据库、密钥、日志及迁移备份放在仓库外私有目录；公开源码、Git历史与元数据不得保留用户主机路径、私人域名/IP、私人邮箱或真实凭据。
 - 同一工作目录同时只有一个写入者；交接前确认前任停止。保护未知改动，不通过覆盖、回滚或删除用户工作来获取干净状态。
 - 按清晰任务形成可追溯的提交，只纳入本次授权范围；禁止未经授权的破坏性重置、强制切换和强推。
 - 多阶段任务在有意义的边界记录目标、范围、依赖、验收条件、提交、有效验证证据、已知问题和下一步。记录保持简短，不为小任务建立整套台账。

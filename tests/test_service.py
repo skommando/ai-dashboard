@@ -16,7 +16,7 @@ SERVICE = Path(__file__).resolve().parents[1] / "scripts" / "service.py"
 START_SCRIPT = SERVICE.with_name("start-dashboard.ps1")
 STOP_SCRIPT = SERVICE.with_name("stop-dashboard.ps1")
 ROOT_VENV_PYTHON = Path(os.environ.get(
-    "DASHBOARD_TEST_VENV_PYTHON", r"D:\example-user\repos\ai-dashboard\.venv\Scripts\python.exe"
+    "DASHBOARD_TEST_VENV_PYTHON", str(SERVICE.parent.parent / ".venv" / "Scripts" / "python.exe")
 ))
 
 

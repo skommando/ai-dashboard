@@ -23,6 +23,7 @@ liveHtml = liveHtml.replace('<span class="foot-version">DEMO / 01</span>', '');
 liveHtml = liveHtml.replace('<span id="side-project-count">06</span>', '<span id="side-project-count">0</span>');
 liveHtml = liveHtml.replace('<span class="heading-count" id="heading-count">6</span>', '<span class="heading-count" id="heading-count">0</span>');
 liveHtml = liveHtml.replace('个人项目进度看板，只读交互演示。', '个人项目进度看板，只读查看真实上报。');
+liveHtml = liveHtml.replace('Windows 本机<small>个人工作空间</small>', '项目进度服务<small>远程工作空间</small>');
 liveHtml = liveHtml.replace('以下保留最后一次记录 · 今天 14:38。请确认电脑在线后再查看。', '无法读取当前数据，连接恢复后会自动重试。');
 liveHtml = liveHtml.replace('暂时无法连接本机', '暂时无法读取进度');
 liveHtml = liveHtml.replace('<span class="offline-tag">离线示例</span>', '<span class="offline-tag">离线</span>');

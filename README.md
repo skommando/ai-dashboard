@@ -1,73 +1,48 @@
-# ai-dashboard
+# ai-dashboard · 进度簿
 
-一个面向个人的远程项目进度看板，初步目标是在 iPhone 上方便地查看 Windows 本机运行的多个项目。
+一个轻量的项目进度看板。项目或 agent 主动上报工作快照，在手机和桌面统一查看 Project → Wave → Task 的进度、具体工作、阻塞和验收依据。
 
-## 需求起点
+- Python 3.12 + FastAPI + SQLite，单个服务同时提供页面、读取与上报 API。
+- 查看使用 Basic Auth；上报额外需要项目独立令牌。公网部署在 VPS，经 Nginx 提供 HTTPS，无需隧道或保持开发电脑在线。
+- Task 等权计量；子项不增加分母。未规划范围、实际完成、验收及上报时间分别显示。
+- HTML/CSS/JavaScript 前端，无模型调用、远程执行或手机写入界面。
 
-- 为不同项目设计统一、可解释的进度计量指标。
-- 提供统一的更新入口，让项目或其中的 agent 主动上报进度；候选为 MCP、HTTP API（以 OpenAPI 描述）。
-- 提供直观、友好的查看体验，适配手机与桌面。
-- 调研现有开源 AI 工作台，明确可借鉴内容和本项目边界。
+## 使用
 
-## 当前状态
+1. 部署管理员按 [VPS 部署](docs/vps-deployment.md) 启动服务，设置查看账号并登记项目令牌。
+2. 接入方按 [API 与 AI 接入文档](docs/api.md) 准备凭据、查询版本、封存快照并上报。
+3. 在浏览器打开自己的部署域名，用查看账号登录；可在 iPhone Safari 中访问。
 
-2026-09-28：Python + SQLite 后端、稳定上报 OpenAPI、真实前端和本机/VPS 服务已上线，核心与公开页面验证通过。
+本文的域名、路径与凭据均为示例，仓库不包含可用的生产凭据或真实项目数据库。
 
-正式页面沿用已认可的原生 HTML/CSS/JavaScript，读取真实上报数据。独立 demo 继续保留虚构样例。项目不调用大模型，也不提供网页写入或远程执行功能。
+## 本地开发
 
-## 已部署入口
-
-- 查看：[dashboard.example.com](https://dashboard.example.com)，使用既有 Basic Auth。
-- 本机读取：`http://127.0.0.1:8810/`，同样要求查看凭据。
-- 本机上报：`http://127.0.0.1:8811`，每项目使用独立 Bearer token。
-- 本机 OpenAPI：[交互文档](http://127.0.0.1:8811/docs)、[JSON 契约](http://127.0.0.1:8811/openapi.json)。
-
-首个真实项目为 `ai-dashboard`。其他项目按[接入说明](docs/api.md)登记、领取本机令牌并主动上报；不会扫描其他仓库伪造进度。
-
-## 运行与维护
-
-当前用户登录任务 `AI Dashboard - dashboard.example.com` 管理本机监督进程；它负责读取服务、写入服务与 frpc，组件异常退出会重试。VPS 使用独立 `ai-dashboard-frps.service`，8072 为控制端口，8083 仅监听回环，供 Nginx 转发。
+需要 Python 3.12、Node.js 22。开发数据库与生产数据库独立。
 
 ```powershell
-# 在仓库根目录检查、启动或停止本项目服务
-.\.venv\Scripts\python.exe scripts/service.py status --config .runtime/service.json
-Start-ScheduledTask -TaskName 'AI Dashboard - dashboard.example.com'
-powershell -NoProfile -File scripts/stop-dashboard.ps1
-
-# 构建与检查
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 node scripts/build-demo.cjs
-node --test tests/*.cjs
-.\.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v
+.\tools\start.ps1
+# 访问 http://127.0.0.1:8810，使用自己设置的开发凭据
+.\tools\stop.ps1
 ```
 
-运行配置、原始令牌、日志和 SQLite 位于忽略的 `.runtime/`；不要提交或转发这些文件。安装环境可按 `requirements-lock.txt` 复现。详见[运行说明](docs/operations.md)和[VPS 部署说明](docs/vps-deployment.md)。
+启动参数与凭据设置见 [tools](tools/README.md)。启动/停止脚本放在 `tools/`；Linux 入口用于管理 VPS 上的 systemd 服务。运行数据默认在仓库外，不能放进 Git。
 
-## 前端 demo
+## 开发与发布
 
-- [完整 demo](demo/index.html)：可独立打开，自动适配桌面与手机。
-- [手机预览](demo/mobile.html)：可独立转发，桌面可切换手机宽度。
-- [体验说明与命令](demo/README.md)。
+`dev` 用于迭代；通过测试与审查后合入 `main`，生产只部署 `main` 的固定提交。GitHub CI 不持有部署凭据，也不会自动部署。只有所有者明确要求时才可跳过测试，并记录原因。
 
-```powershell
-node scripts/build-demo.cjs
-node --test tests/progress-model.test.cjs
-python -m http.server 8765 --bind 127.0.0.1 --directory demo
-```
+- [贡献与验收流程](CONTRIBUTING.md)
+- [运行、备份与恢复](docs/operations.md)
+- [安全与凭据](SECURITY.md)
+- [协作约定](AGENTS.md)
 
-浏览器打开 `http://127.0.0.1:8765/`。也可直接打开 HTML，无需运行服务。
+## 离线演示
 
-## 文档入口
+[完整 demo](demo/index.html) 和 [手机预览](demo/mobile.html) 可独立打开，仅含虚构样例。修改 `demo/src/` 后运行 `node scripts/build-demo.cjs`，同时生成正式前端 `web/index.html`。浏览器移动视口检查与真实 iPhone 验收分别记录。
 
-- [项目协作约定](AGENTS.md)：工作范围、授权、验证、Git 与协作规则。
-- [AI 工作台简要调研](docs/research/2026-09-28-ai-workbenches.md)：六个代表项目、与本项目的差异、iPhone 访问可行性与后续设计建议。
-- [进度看板设计](docs/superpowers/specs/2026-09-28-progress-dashboard-design.md)：已确认的计量口径、只读架构与桌面/手机 demo 方案。
-- [demo 执行计划](docs/superpowers/plans/2026-09-28-frontend-demo.md)与[验证记录](docs/verification/2026-09-28-frontend-demo.md)。
-- [本地 Codex 最小验证](docs/research/2026-09-28-codex-local-probe.md)：不使用 SDK 的实际调用结果与尚未验证的边界。
-- [正式服务契约](docs/superpowers/specs/2026-09-28-live-dashboard-contract.md)与[实施检查点](docs/superpowers/plans/2026-09-28-live-dashboard.md)。
-- [上线验证记录](docs/verification/2026-09-28-live-dashboard.md)：真实上报、重启、鉴权、端口边界与公网浏览器证据。
+## 许可
 
-## 下一步
-
-在 iPhone 上体验正式页面，并为其他项目接入上报。浏览器移动视口与真实 iPhone 的验收分别记录。
-
-当前阶段不包含 AI 编码执行器、聊天平台、多用户系统或原生 iOS 应用。远程控制本地 Codex 仅完成独立连接的最小验证，未纳入看板首版。
+[MIT](LICENSE)，Copyright © 2026 skommando。第三方依赖保持各自的许可证。
