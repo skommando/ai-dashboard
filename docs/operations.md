@@ -14,7 +14,8 @@
 | `/opt/ai-dashboard/releases/<commit>` | 固定版本代码和虚拟环境 |
 | `/opt/ai-dashboard/current` | 当前release软链接 |
 | `/opt/ai-dashboard/runtime/python` | 独立Python3.12解释器 |
-| `/opt/ai-dashboard/shared` | 受限的SQLite、配置、凭据及备份 |
+| `/opt/ai-dashboard/shared` | 管理员持有的私有配置、凭据及备份 |
+| `/opt/ai-dashboard/shared/data` | 服务用户持有的SQLite与WAL/SHM；需要目录写权限 |
 
 服务使用低权限 `ai-dashboard` 用户，代码由管理员拥有。`dashboard.env` 至少设置 `DASHBOARD_DB_PATH`、`DASHBOARD_WEB_DIR`、`DASHBOARD_VIEW_USERNAME`、`DASHBOARD_VIEW_PASSWORD`。配置文件及SQLite不可公开下载。Nginx的查看凭据与应用Basic一致；写入额外校验项目令牌。
 

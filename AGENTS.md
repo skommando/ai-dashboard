@@ -7,7 +7,7 @@
 - 已确定按 Task 等权计量，子项不增加分母；各项目使用 HTTP API（OpenAPI 描述）上报原子快照，以 revision 和幂等键防止旧报告覆盖与重复写入。本轮未实现 MCP。
 - 查看端需要直观、友好并适配手机与桌面。是否另需命令行终端界面尚未确认，不把“终端兼容”直接解释为必须实现 TUI。
 - 当前实现为 Python 3.12 + FastAPI + SQLite 与原生前端。`web/index.html` 读取真实数据；`demo/index.html` 和 `demo/mobile.html` 保留离线样例。生产运行配置、数据库与凭据在 VPS `/opt/ai-dashboard/shared`，开发运行数据在仓库外私有目录。
-- 入口：`node scripts/build-demo.cjs` 构建；`node --test tests/*.cjs` 和 `.venv\Scripts\python.exe -m unittest discover -s tests -p 'test_*.py' -v` 检查规则；浏览器脚本为 `scripts/check-demo.cjs`、`scripts/check-live.cjs`（需 Playwright/Chromium）。本机服务用 `scripts/service.py run|status|stop --config .runtime/service.json` 管理，详见运行文档。
+- 入口：`node scripts/build-demo.cjs` 构建；`node --test tests/*.cjs` 和 `python -m unittest discover -s tests -p 'test_*.py' -v`（使用仓库外的开发环境） 检查规则；浏览器脚本为 `scripts/check-demo.cjs`、`scripts/check-live.cjs`（需 Playwright/Chromium）。日常启停使用 `tools/`，监督器可用 `scripts/service.py run|status|stop --config <仓库外配置>` 管理，详见运行文档。
 - 当前用户已授权统一服务迁往 VPS、数据库迁移、取消本应用隧道及安全公开 GitHub 仓库。统一应用回环8810，所有请求需Basic Auth，版本查询和上报另需X-Project-Token。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
 
 ## 文档入口与裁决

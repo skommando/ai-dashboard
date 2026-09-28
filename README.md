@@ -20,9 +20,8 @@
 需要 Python 3.12、Node.js 22。开发数据库与生产数据库独立。
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-lock.txt
 node scripts/build-demo.cjs
+# 首次启动会在仓库外创建环境，交互设置开发凭据
 .\tools\start.ps1
 # 访问 http://127.0.0.1:8810，使用自己设置的开发凭据
 .\tools\stop.ps1
