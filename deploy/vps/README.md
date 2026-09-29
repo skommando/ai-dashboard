@@ -42,6 +42,8 @@ python3 deploy/vps/release.py deploy \
 
 代码回滚使用已有 release，保留当时的生产数据库：
 
+跨认证协议切换成功后，该命令只接受已包含会话认证的 release。旧 Basic 版本的配置与上报客户端都不兼容本版，脚本会提前拒绝。首次发布失败仍按现场备份自动恢复原站点和原服务；若今后确需恢复旧协议，须先冻结写入，由管理员从 root 私有备份同时恢复旧站点 include、旧登录环境和旧客户端调用方式，并核对 HTTPS 鉴权。不能只换代码或用旧数据库覆盖新上报。
+
 ```bash
 python3 deploy/vps/release.py rollback --sha <先前发布的完整SHA>
 ```

@@ -11,7 +11,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from .models import Project, Snapshot
 from .session import COOKIE_AGE, COOKIE_NAME, issue_cookie, valid_cookie
@@ -41,6 +41,7 @@ class HealthResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     username: str
     password: str
 
@@ -156,7 +157,9 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str,
         return PlainTextResponse("功能未开发", status_code=404)
 
     @app.post("/api/v1/login", response_model=LoginSuccess,
-              openapi_extra={"security": [], "requestBody": {"required": True, "content": {
+              openapi_extra={"security": [], "requestBody": {"required": True,
+                  "description": "仅含 username 和 password 的 UTF-8 JSON；整个请求体不超过 4096 字节",
+                  "content": {
                   "application/json": {"schema": {"$ref": "#/components/schemas/LoginRequest"}}}}},
               responses={404: {"description": "登录未成功，固定正文功能未开发",
                                "content": {"text/plain": {"schema": {"type": "string", "const": "功能未开发"}}}}})

@@ -43,6 +43,8 @@ class SessionTests(unittest.TestCase):
                 self.assertEqual(login_contract["responses"]["404"]["content"]["text/plain"]["schema"]["const"],
                                  "功能未开发")
                 self.assertIn("LoginRequest", schema["components"]["schemas"])
+                self.assertFalse(schema["components"]["schemas"]["LoginRequest"]["additionalProperties"])
+                self.assertIn("4096", login_contract["requestBody"]["description"])
 
                 failures = [client.post("/api/v1/login", json={"username": "wrong", "password": "ComplexPassphrase5!x"}),
                             client.post("/api/v1/login", json={"username": "test-viewer", "password": "wrong"}),
