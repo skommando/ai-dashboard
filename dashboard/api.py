@@ -40,6 +40,15 @@ class HealthResponse(BaseModel):
     status: str
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginSuccess(BaseModel):
+    status: str
+
+
 class RevisionResponse(BaseModel):
     project_id: str
     revision: int
@@ -141,11 +150,19 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str,
             return error(503, "web_unavailable", "login frontend is unavailable")
         return FileResponse(login_page, media_type="text/html; charset=utf-8")
 
-    @app.api_route("/api/v1/login", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    @app.api_route("/api/v1/login", methods=["GET", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
                    include_in_schema=False)
+    def unsupported_login():
+        return PlainTextResponse("功能未开发", status_code=404)
+
+    @app.post("/api/v1/login", response_model=LoginSuccess,
+              openapi_extra={"security": [], "requestBody": {"required": True, "content": {
+                  "application/json": {"schema": {"$ref": "#/components/schemas/LoginRequest"}}}}},
+              responses={404: {"description": "登录未成功，固定正文功能未开发",
+                               "content": {"text/plain": {"schema": {"type": "string", "const": "功能未开发"}}}}})
     async def login(request: Request):
         failure = PlainTextResponse("功能未开发", status_code=404)
-        if request.method != "POST" or request.headers.get("content-type", "").split(";", 1)[0].lower() != "application/json":
+        if request.headers.get("content-type", "").split(";", 1)[0].lower() != "application/json":
             return failure
         body = bytearray()
         async for chunk in request.stream():
@@ -154,15 +171,18 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str,
                 return failure
         try:
             payload = json.loads(body, object_pairs_hook=unique_pairs)
-        except (ValueError, UnicodeDecodeError):
+        except (ValueError, UnicodeDecodeError, RecursionError):
             return failure
         if (not isinstance(payload, dict) or set(payload) != {"username", "password"}
                 or not all(isinstance(value, str) for value in payload.values())):
             return failure
-        supplied_user = hashlib.sha256(payload["username"].encode("utf-8")).digest()
-        expected_user = hashlib.sha256(username.encode("utf-8")).digest()
-        supplied_password = hashlib.sha256(payload["password"].encode("utf-8")).digest()
-        expected_password = hashlib.sha256(password.encode("utf-8")).digest()
+        try:
+            supplied_user = hashlib.sha256(payload["username"].encode("utf-8")).digest()
+            expected_user = hashlib.sha256(username.encode("utf-8")).digest()
+            supplied_password = hashlib.sha256(payload["password"].encode("utf-8")).digest()
+            expected_password = hashlib.sha256(password.encode("utf-8")).digest()
+        except UnicodeEncodeError:
+            return failure
         if not (hmac.compare_digest(supplied_user, expected_user) &
                 hmac.compare_digest(supplied_password, expected_password)):
             return failure
@@ -244,6 +264,7 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str,
             snapshot_schema = Snapshot.model_json_schema(ref_template="#/components/schemas/{model}")
             schemas.update(snapshot_schema.pop("$defs", {}))
             schemas["Snapshot"] = snapshot_schema
+            schemas["LoginRequest"] = LoginRequest.model_json_schema()
             for path, method in (("/api/v1/projects/{project_id}", "get"),
                                  ("/api/v1/projects/{project_id}/revision", "get"),
                                  ("/api/v1/projects/{project_id}/snapshot", "put")):

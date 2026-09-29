@@ -27,6 +27,39 @@ local = load("local_release", ROOT / "scripts/release.py")
 
 
 class SourceTests(unittest.TestCase):
+    def test_cross_auth_deploy_requires_old_credentials_before_layout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = vps.Release(Path(directory) / "app")
+            old = manager.releases / ("a" * 40)
+            old.mkdir(parents=True)
+            fake_current = mock.Mock()
+            fake_current.is_symlink.return_value = True
+            fake_current.resolve.return_value = old
+            with mock.patch.object(manager, "preflight", return_value=(0, 0, {
+                    "DASHBOARD_LOGIN_USERNAME": "viewer", "DASHBOARD_LOGIN_PASSWORD": "new-pass",
+                    "DASHBOARD_SESSION_SECRET": "s" * 64})), \
+                 mock.patch.object(manager, "current", fake_current), \
+                 mock.patch.object(manager, "layout") as layout:
+                with self.assertRaisesRegex(ValueError, "旧版凭据"):
+                    manager.deploy("https://github.com/example/dashboard.git", "b" * 40,
+                                   Path("/usr/bin/python3.12"), Path("/etc/nginx/site.conf"),
+                                   Path("/etc/nginx/dashboard.inc"), Path("/var/www/dashboard"),
+                                   Path("/usr/sbin/nginx"))
+                layout.assert_not_called()
+
+    def test_manual_rollback_rejects_pre_session_release_before_backup_or_switch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manager = vps.Release(Path(directory) / "app")
+            target = manager.releases / ("a" * 40)
+            target.mkdir(parents=True)
+            with mock.patch.object(manager, "validate_release", return_value=target), \
+                 mock.patch.object(manager, "backup") as backup, \
+                 mock.patch.object(manager, "switch") as switch:
+                with self.assertRaisesRegex(ValueError, "旧版认证协议"):
+                    manager._rollback_locked("a" * 40)
+                backup.assert_not_called()
+                switch.assert_not_called()
+
     def test_rollback_refuses_dirty_target_before_backup_or_switch(self):
         with tempfile.TemporaryDirectory() as directory:
             manager = vps.Release(Path(directory) / "app")
@@ -223,6 +256,8 @@ class RecoveryTests(unittest.TestCase):
             old, current = manager.releases / ("a" * 40), manager.releases / ("b" * 40)
             (old / ".venv/bin").mkdir(parents=True)
             (old / ".venv/bin/python").write_text("")
+            (old / "dashboard").mkdir()
+            (old / "dashboard/session.py").write_text("", encoding="utf-8")
             current.mkdir()
             manager.current.symlink_to(current)
             manager.shared.mkdir()

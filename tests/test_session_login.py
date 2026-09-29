@@ -37,6 +37,12 @@ class SessionTests(unittest.TestCase):
                 self.assertEqual(client.get("/login").text, "login form")
                 self.assertEqual(client.get("/healthz").status_code, 200)
                 self.assertEqual(client.get("/openapi.json").status_code, 200)
+                schema = client.get("/openapi.json").json()
+                login_contract = schema["paths"]["/api/v1/login"]["post"]
+                self.assertEqual(login_contract["security"], [])
+                self.assertEqual(login_contract["responses"]["404"]["content"]["text/plain"]["schema"]["const"],
+                                 "功能未开发")
+                self.assertIn("LoginRequest", schema["components"]["schemas"])
 
                 failures = [client.post("/api/v1/login", json={"username": "wrong", "password": "ComplexPassphrase5!x"}),
                             client.post("/api/v1/login", json={"username": "test-viewer", "password": "wrong"}),
@@ -44,6 +50,10 @@ class SessionTests(unittest.TestCase):
                             client.post("/api/v1/login", json={"username": "test-viewer"}),
                             client.post("/api/v1/login", json={"username": "test-viewer", "password": "x" * 5000}),
                             client.post("/api/v1/login", data={"username": "test-viewer", "password": "x"}),
+                            client.post("/api/v1/login", content=b'{"username":"\\ud800","password":"x"}',
+                                        headers={"Content-Type": "application/json"}),
+                            client.post("/api/v1/login", content=b"[" * 3000,
+                                        headers={"Content-Type": "application/json"}),
                             client.get("/api/v1/login"),
                             client.put("/api/v1/login")]
                 self.assertEqual([(r.status_code, r.text) for r in failures], [(404, "功能未开发")] * len(failures))

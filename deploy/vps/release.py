@@ -333,6 +333,10 @@ class Release:
 
     def deploy(self, url, sha, python, site, include, site_root, nginx):
         uid, gid, environment = self.preflight(site, include, site_root, nginx, python)
+        if self.current.is_symlink():
+            previous = self.current.resolve(strict=True)
+            if not (previous / "dashboard" / "session.py").is_file() and not LEGACY_ENV_KEYS.issubset(environment):
+                raise ValueError("首次跨认证协议部署必须保留旧版凭据，以便失败时恢复旧服务")
         self.layout(uid, gid)
         # This lock covers source, symlink, service and Nginx changes.
         import fcntl
@@ -392,6 +396,8 @@ class Release:
 
     def _rollback_locked(self, sha):
         target = self.validate_release(sha, require_ready=True)
+        if not (target / "dashboard" / "session.py").is_file():
+            raise ValueError("旧版认证协议无法直接回滚；需先从私有备份恢复匹配的站点与凭据配置")
         environment = read_environment(self.environment_file)
         previous = self.current.resolve(strict=True)
         backup = self.backup(sha)
