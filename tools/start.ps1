@@ -106,16 +106,24 @@ if (Test-Path -LiteralPath $config -PathType Leaf) {
     $old = Get-Content -LiteralPath $config -Raw | ConvertFrom-Json
     if ($old.runtime_directory -ne $Runtime) { throw '现有配置属于其他运行目录。' }
 }
-$user = if ($old) { [string]$old.environment.DASHBOARD_VIEW_USERNAME } else { $env:DASHBOARD_VIEW_USERNAME }
-$password = if ($old) { [string]$old.environment.DASHBOARD_VIEW_PASSWORD } else { $env:DASHBOARD_VIEW_PASSWORD }
-if (-not $user) { $user = Read-Host 'Basic Auth 用户名' }
+$user = if ($old -and $old.environment.DASHBOARD_LOGIN_USERNAME) { [string]$old.environment.DASHBOARD_LOGIN_USERNAME } else { $env:DASHBOARD_LOGIN_USERNAME }
+$password = if ($old -and $old.environment.DASHBOARD_LOGIN_PASSWORD) { [string]$old.environment.DASHBOARD_LOGIN_PASSWORD } else { $env:DASHBOARD_LOGIN_PASSWORD }
+if (-not $user) { $user = Read-Host '登录用户名' }
 if (-not $password) {
-    $secure = Read-Host 'Basic Auth 密码' -AsSecureString
+    $secure = Read-Host '登录密码' -AsSecureString
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
     try { $password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($pointer) }
     finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($pointer) }
 }
-if (-not $user -or -not $password) { throw 'Basic Auth 用户名和密码不能为空。' }
+if (-not $user -or -not $password) { throw '登录用户名和密码不能为空。' }
+$secret = if ($old -and $old.environment.DASHBOARD_SESSION_SECRET) { [string]$old.environment.DASHBOARD_SESSION_SECRET } else { $env:DASHBOARD_SESSION_SECRET }
+if (-not $secret) {
+    $random = New-Object byte[] 32
+    $generator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $generator.GetBytes($random) } finally { $generator.Dispose() }
+    $secret = [System.BitConverter]::ToString($random).Replace('-', '').ToLowerInvariant()
+}
+if ($secret.Length -lt 32) { throw '会话密钥长度不足。' }
 
 $data = @{
     working_directory = $Runtime
@@ -124,8 +132,9 @@ $data = @{
         PYTHONPATH = $repo
         DASHBOARD_DB_PATH = (Join-Path $Runtime 'dashboard.sqlite3')
         DASHBOARD_WEB_DIR = (Join-Path $repo 'web')
-        DASHBOARD_VIEW_USERNAME = $user
-        DASHBOARD_VIEW_PASSWORD = $password
+        DASHBOARD_LOGIN_USERNAME = $user
+        DASHBOARD_LOGIN_PASSWORD = $password
+        DASHBOARD_SESSION_SECRET = $secret
     }
     components = @(@{
         name = 'app'
@@ -146,12 +155,10 @@ try {
 }
 & (Join-Path $repo 'scripts\start-dashboard.ps1') -Config $config -Python $Python -Pythonw $pythonw
 if ($LASTEXITCODE -ne 0) { throw '本地服务启动失败。' }
-$pair = [System.Text.Encoding]::UTF8.GetBytes($user + ':' + $password)
-$authorization = 'Basic ' + [System.Convert]::ToBase64String($pair)
 $healthy = $false
 for ($attempt = 0; $attempt -lt 12; $attempt++) {
     try {
-        $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8810/healthz' -Headers @{ Authorization = $authorization } -TimeoutSec 2 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri 'http://127.0.0.1:8810/healthz' -TimeoutSec 2 -UseBasicParsing
         if ($response.StatusCode -eq 200) { $healthy = $true; break }
     } catch { Start-Sleep -Milliseconds 250 }
 }

@@ -1,7 +1,6 @@
 """统一读取与上报 ASGI 应用。"""
 
-import base64
-import binascii
+import hashlib
 import hmac
 import json
 import re
@@ -11,10 +10,11 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.openapi.utils import get_openapi
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from pydantic import BaseModel, ValidationError
 
 from .models import Project, Snapshot
+from .session import COOKIE_AGE, COOKIE_NAME, issue_cookie, valid_cookie
 from .store import (AuthenticationChanged, KeyConflict, RevisionConflict,
                     authorized_revision, init_db, project_views, save_snapshot)
 
@@ -22,8 +22,8 @@ from .store import (AuthenticationChanged, KeyConflict, RevisionConflict,
 MAX_BODY = 1024 * 1024
 ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}\Z")
 KEY_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-READ_SECURITY = [{"ViewerBasic": []}]
-WRITE_SECURITY = [{"ViewerBasic": [], "ProjectToken": []}]
+READ_SECURITY = [{"ViewerSession": []}]
+WRITE_SECURITY = [{"ProjectToken": []}]
 
 
 class ErrorDetail(BaseModel):
@@ -101,28 +101,75 @@ def storage_error(request: Request, exception: sqlite3.Error) -> JSONResponse:
     return error(500, "storage_error", "dashboard storage is temporarily unavailable")
 
 
-def create_app(db_path: str, web_dir: str | Path, username: str, password: str) -> FastAPI:
-    if not username or not password or ":" in username:
-        raise ValueError("Basic Auth username/password required; username cannot contain colon")
+def create_app(db_path: str, web_dir: str | Path, username: str, password: str,
+               session_secret: str) -> FastAPI:
+    if not username or not password or len(session_secret) < 32:
+        raise ValueError("login username/password and a strong session secret are required")
     init_db(db_path)
     page = Path(web_dir) / "index.html"
+    login_page = Path(web_dir) / "login.html"
     app = FastAPI(title="AI Dashboard API", version="1.0.0")
     app.add_exception_handler(sqlite3.Error, storage_error)
 
     @app.middleware("http")
     async def protect(request: Request, call_next):
-        if not _valid_basic(request, username, password):
-            response = error(401, "unauthorized", "Basic authentication required")
-            response.headers["WWW-Authenticate"] = 'Basic realm="AI Dashboard", charset="UTF-8"'
-        else:
+        path = request.url.path
+        public = path in ("/healthz", "/docs", "/openapi.json", "/login", "/api/v1/login")
+        token_route = (path.startswith("/api/v1/projects/") and
+                       ((request.method == "GET" and path.endswith("/revision")) or
+                        (request.method == "PUT" and path.endswith("/snapshot"))))
+        own_project = re.fullmatch(r"/api/v1/projects/([A-Za-z0-9][A-Za-z0-9._-]{0,79})", path)
+        own_read = (request.method == "GET" and own_project is not None and
+                    authorized_revision(db_path, own_project.group(1), request.headers.get("x-project-token", ""))
+                    is not None)
+        if public or token_route or own_read or valid_cookie(request.cookies.get(COOKIE_NAME), session_secret, password):
             response = await call_next(request)
+        elif path == "/" and request.method == "GET":
+            response = RedirectResponse("/login", status_code=303)
+        else:
+            response = error(401, "unauthorized", "login required")
         response.headers["Cache-Control"] = "no-store"
         return response
 
-    @app.get("/healthz", response_model=HealthResponse,
-             openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 500))
+    @app.get("/healthz", response_model=HealthResponse, responses=error_responses(500))
     def health():
         return {"status": "ok"}
+
+    @app.get("/login", include_in_schema=False)
+    def login_form():
+        if not login_page.is_file():
+            return error(503, "web_unavailable", "login frontend is unavailable")
+        return FileResponse(login_page, media_type="text/html; charset=utf-8")
+
+    @app.api_route("/api/v1/login", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+                   include_in_schema=False)
+    async def login(request: Request):
+        failure = PlainTextResponse("功能未开发", status_code=404)
+        if request.method != "POST" or request.headers.get("content-type", "").split(";", 1)[0].lower() != "application/json":
+            return failure
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > 4096:
+                return failure
+        try:
+            payload = json.loads(body, object_pairs_hook=unique_pairs)
+        except (ValueError, UnicodeDecodeError):
+            return failure
+        if (not isinstance(payload, dict) or set(payload) != {"username", "password"}
+                or not all(isinstance(value, str) for value in payload.values())):
+            return failure
+        supplied_user = hashlib.sha256(payload["username"].encode("utf-8")).digest()
+        expected_user = hashlib.sha256(username.encode("utf-8")).digest()
+        supplied_password = hashlib.sha256(payload["password"].encode("utf-8")).digest()
+        expected_password = hashlib.sha256(password.encode("utf-8")).digest()
+        if not (hmac.compare_digest(supplied_user, expected_user) &
+                hmac.compare_digest(supplied_password, expected_password)):
+            return failure
+        response = JSONResponse({"status": "ok"})
+        response.set_cookie(COOKIE_NAME, issue_cookie(session_secret, password), max_age=COOKIE_AGE,
+                            secure=True, httponly=True, samesite="lax", path="/")
+        return response
 
     @app.get("/api/v1/projects/{project_id}/revision",
              response_model=RevisionResponse,
@@ -190,7 +237,7 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str) 
             document = get_openapi(title=app.title, version=app.version, routes=app.routes)
             components = document.setdefault("components", {})
             components.setdefault("securitySchemes", {}).update({
-                "ViewerBasic": {"type": "http", "scheme": "basic"},
+                "ViewerSession": {"type": "apiKey", "in": "cookie", "name": COOKIE_NAME},
                 "ProjectToken": {"type": "apiKey", "in": "header", "name": "X-Project-Token"},
             })
             schemas = components.setdefault("schemas", {})
@@ -208,7 +255,7 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str) 
             for method, path in (("get", "/api/v1/projects/{project_id}/revision"),
                                  ("put", "/api/v1/projects/{project_id}/snapshot")):
                 document["paths"][path][method]["responses"]["401"]["description"] = (
-                    "Basic Auth、project_id 或项目令牌无效")
+                    "project_id 或项目令牌无效")
             document["paths"]["/api/v1/projects/{project_id}/revision"]["get"]["responses"]["422"]["description"] = (
                 "框架请求参数校验失败；无效 project_id 按 401 返回")
             app.openapi_schema = document
@@ -228,7 +275,7 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str) 
         return {"projects": project_views(db_path), "server_time": now_iso()}
 
     @app.get("/api/v1/projects/{project_id}", response_model=ProjectView,
-             openapi_extra={"security": READ_SECURITY}, responses=error_responses(401, 404, 500))
+             openapi_extra={"security": READ_SECURITY + WRITE_SECURITY}, responses=error_responses(401, 404, 500))
     def project(project_id: str):
         views = project_views(db_path, project_id)
         if not views:
@@ -236,20 +283,3 @@ def create_app(db_path: str, web_dir: str | Path, username: str, password: str) 
         return views[0]
 
     return app
-
-
-def _valid_basic(request: Request, username: str, password: str) -> bool:
-    auth = request.headers.get("authorization", "")
-    parts = auth.split(" ", 1)
-    if len(parts) != 2 or parts[0].lower() != "basic":
-        return False
-    try:
-        decoded = base64.b64decode(parts[1], validate=True).decode("utf-8")
-    except (binascii.Error, UnicodeDecodeError):
-        return False
-    supplied_user, separator, supplied_password = decoded.partition(":")
-    if not separator:
-        return False
-    user_matches = hmac.compare_digest(supplied_user.encode("utf-8"), username.encode("utf-8"))
-    password_matches = hmac.compare_digest(supplied_password.encode("utf-8"), password.encode("utf-8"))
-    return user_matches and password_matches

@@ -8,7 +8,7 @@
 - 查看端需要直观、友好并适配手机与桌面。是否另需命令行终端界面尚未确认，不把“终端兼容”直接解释为必须实现 TUI。
 - 当前实现为 Python 3.12 + FastAPI + SQLite 与原生前端。`web/index.html` 读取真实数据；`demo/index.html` 和 `demo/mobile.html` 保留离线样例。生产运行配置、数据库与凭据在 VPS `/opt/ai-dashboard/shared`，开发运行数据在仓库外私有目录。
 - 入口：`node scripts/build-demo.cjs` 构建；`node --test tests/*.cjs` 和 `python -m unittest discover -s tests -p 'test_*.py' -v`（使用仓库外的开发环境） 检查规则；浏览器脚本为 `scripts/check-demo.cjs`、`scripts/check-live.cjs`（需 Playwright/Chromium）。日常启停使用 `tools/`，监督器可用 `scripts/service.py run|status|stop --config <仓库外配置>` 管理，详见运行文档。
-- 当前用户已授权统一服务迁往 VPS、数据库迁移、取消本应用隧道及安全公开 GitHub 仓库。统一应用回环8810，所有请求需Basic Auth，版本查询和上报另需X-Project-Token。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
+- 当前用户已授权统一服务迁往 VPS、数据库迁移、取消本应用隧道及安全公开 GitHub 仓库。统一应用回环8810；网页查看用180天浏览器会话，项目详情可用该项目令牌读取，版本查询和上报只需X-Project-Token。Basic Auth已移除。当前不包含远程控制、AI执行器、聊天平台、多用户系统或原生iOS应用。
 
 ## 文档入口与裁决
 
@@ -17,7 +17,7 @@
 - `demo/README.md`：demo 使用、源码、构建与验证；`docs/superpowers/specs/2026-09-28-progress-dashboard-design.md`：已确认的展示口径；`docs/verification/`：实际验证证据。
 - 项目内裁决顺序：用户当前明确指令与有效授权 → 本文件 → 已批准的设计和计划 → README 与研究记录。研究建议不等于批准实施的方案；更高优先级的运行环境和工具约束仍然适用。
 - 修改已有 `AGENTS.md` 或其他 agent 专用约定需要明确授权；普通文档、实现和必要检查在任务范围内自主处理。
-- 当前实施检查点为 `docs/superpowers/plans/2026-09-28-vps-production.md`，设计为同名 specs 文档；旧本机部署与demo计划仅保留为已匿名化的历史记录。
+- 当前登录改造检查点为 `docs/superpowers/plans/2026-09-29-session-login.md`，设计为同名 specs 文档；旧VPS迁移、本机部署与demo计划仅保留为已匿名化的历史记录。
 
 ## 交互、范围与授权
 

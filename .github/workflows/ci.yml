@@ -42,3 +42,4 @@ jobs:
       - run: node scripts/build-demo.cjs
       - run: node scripts/check-task-copy.cjs
       - run: node scripts/check-live.cjs
+      - run: node scripts/check-login.cjs

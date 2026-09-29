@@ -58,8 +58,9 @@ class ServiceTests(unittest.TestCase):
             "environment": {
                 "DASHBOARD_DB_PATH": str(self.runtime / "dashboard.sqlite3"),
                 "DASHBOARD_WEB_DIR": str(self.root),
-                "DASHBOARD_VIEW_USERNAME": "viewer",
-                "DASHBOARD_VIEW_PASSWORD": "top-secret-password",
+                "DASHBOARD_LOGIN_USERNAME": "viewer",
+                "DASHBOARD_LOGIN_PASSWORD": "top-secret-password",
+                "DASHBOARD_SESSION_SECRET": "s" * 64,
             },
             "components": components,
         }
@@ -150,7 +151,7 @@ class ServiceTests(unittest.TestCase):
         self.assertGreater(state["components"][0]["next_restart_at"], state["components"][0]["last_exit_at"])
         serialized = (self.runtime / "service-state.json").read_text(encoding="utf-8")
         self.assertNotIn("top-secret-password", serialized)
-        self.assertNotIn("DASHBOARD_VIEW_PASSWORD", serialized)
+        self.assertNotIn("DASHBOARD_LOGIN_PASSWORD", serialized)
         self.assertNotIn(str(self.config), serialized)
 
     def test_stop_only_ends_owned_child_and_ignores_stale_pid(self):

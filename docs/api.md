@@ -4,25 +4,20 @@
 
 ## 1. 服务地址与凭据
 
-生产基址由管理员提供，例如 `https://dashboard.example.com`；不要直接照抄示例域名。开发可用 `http://127.0.0.1:8810`。生产禁止明文 HTTP，不忽略 TLS 证书校验，不跟随携带凭据请求的重定向。
+生产基址由管理员提供，例如 `https://dashboard.example.com`；开发可用 `http://127.0.0.1:8810`。上报只接受 HTTPS 或本机回环 HTTP；客户端不忽略 TLS 校验、不跟随携带令牌的重定向。
 
-| 配置 | 由谁提供 | 用途与存放 |
+| 角色 | 凭据 | 作用 |
 | --- | --- | --- |
-| `base_url` | 管理员 | 已部署服务的 HTTPS 基址，无额外路径 |
-| `project_id` | 管理员与接入方约定 | 稳定项目标识，不能以每次运行的临时名称替代 |
-| Basic 用户名、密码 | 管理员私下提供；人工写入 | 所有端点均需要；放仓库外的凭据JSON或环境变量 |
-| 项目令牌 | 管理员登记项目后私下提供；人工写入 | 仅对应项目的上报与版本查询；独立令牌文件或环境变量 |
+| 手机/桌面查看者 | 登录账号与密码 | 在 `/login` 输入一次，服务器签发有效期 180 天的浏览器会话 Cookie。账号和密码由管理员私下提供，不在本仓库。 |
+| 项目上报脚本或 AI | 项目 ID 与该项目独立令牌 | 查询版本、提交快照；不需要登录账号、密码或 Cookie。令牌从仓库外私有文件或环境变量读取。 |
 
-Basic 文件格式为 `{"username":"<人工填写>","password":"<人工填写>"}`；项目令牌文件只含令牌。占位符不能直接使用。禁止把真实值写入源码、快照、请求封存文件、Git、日志、Issue或命令参数。文件路径可以出现在命令中，文件内容不能打印。
-
-请求头：
+查看 Cookie 名称为 `__Host-ai_dashboard_session`，设置 `Secure`、`HttpOnly`、`SameSite=Lax`，只限当前站点，180 天后到期。浏览器隐私模式或清除网站数据会提前删除它；登录密码改变后旧会话失效。`POST /api/v1/login` 接受 `{"username":"...","password":"..."}`；所有登录失败统一返回 HTTP 404、纯文本 `功能未开发`，不区分账号、密码和输入格式。
 
 | Header | 必需范围 | 说明 |
 | --- | --- | --- |
-| `Authorization: Basic <base64(username:password)>` | 全部 | Base64不是加密，安全性依赖HTTPS；用户名/密码为UTF-8 |
-| `X-Project-Token: <项目令牌>` | revision GET、snapshot PUT | 与Basic同时校验，不能用Bearer替代 |
-| `Idempotency-Key` | snapshot PUT | 1–128字符；字母/数字开头，其后可含字母、数字、点、下划线、横线和冒号 |
-| `Content-Type: application/json` | snapshot PUT | UTF-8 JSON，最大1 MiB |
+| `X-Project-Token: <项目令牌>` | revision GET、snapshot PUT；也可用于本项目详情 GET | 与 URL 中的项目 ID 匹配。只将令牌放在这个请求头，不用 Basic 或 Bearer。 |
+| `Idempotency-Key` | snapshot PUT | 1–128字符；字母/数字开头，其后可含字母、数字、点、下划线、横线和冒号。 |
+| `Content-Type: application/json` | snapshot PUT、login POST | UTF-8 JSON；快照最大 1 MiB，登录请求最大 4096 字节。 |
 
 项目注册与令牌轮换没有公网端点。管理员在VPS应用环境执行 `python -m dashboard.manage register <project_id> --db <私有数据库路径> --token-file <私有新令牌文件>`；显式轮换用 `rotate`。登记不会覆盖已有项目；令牌文件必须为新文件，命令不会输出令牌。数据库只保存令牌哈希，轮换立即使旧令牌失效。
 
@@ -32,13 +27,15 @@ Basic 文件格式为 `{"username":"<人工填写>","password":"<人工填写>"}
 
 | 方法与路径 | 认证 | 作用 | 成功响应 |
 | --- | --- | --- | --- |
-| `GET /` | Basic | 手机/桌面只读页面 | HTML |
-| `GET /healthz` | Basic | 服务探测 | `{"status":"ok"}` |
-| `GET /api/v1/projects` | Basic | 全部已上报项目及服务时间 | `{projects:[ProjectView],server_time:"..."}` |
-| `GET /api/v1/projects/{project_id}` | Basic | 单个项目最近快照视图 | `ProjectView` |
-| `GET /api/v1/projects/{project_id}/revision` | Basic + 项目令牌 | 查询当前版本，首次未上报为0 | `{project_id:"...",revision:0}` |
-| `PUT /api/v1/projects/{project_id}/snapshot` | Basic + 项目令牌 | 原子替换该项目完整快照 | `{project_id,revision,received_at,replayed}` |
-| `GET /openapi.json`、`GET /docs` | Basic | JSON契约、交互文档 | OpenAPI JSON / HTML |
+| `GET /login` | 无 | 手机/桌面登录页 | HTML |
+| `POST /api/v1/login` | 账号与密码 | 签发查看会话 | `{"status":"ok"}` 与安全 Cookie |
+| `GET /` | 会话 Cookie | 只读看板；未登录跳转 `/login` | HTML |
+| `GET /healthz` | 无 | 服务探测，不返回项目内容 | `{"status":"ok"}` |
+| `GET /api/v1/projects` | 会话 Cookie | 全部已上报项目及服务时间 | `{projects:[ProjectView],server_time:"..."}` |
+| `GET /api/v1/projects/{project_id}` | 会话 Cookie 或该项目令牌 | 单个项目最近快照视图；项目令牌只能读取本项目 | `ProjectView` |
+| `GET /api/v1/projects/{project_id}/revision` | 项目令牌 | 查询当前版本，首次未上报为0 | `{project_id:"...",revision:0}` |
+| `PUT /api/v1/projects/{project_id}/snapshot` | 项目令牌 | 原子替换该项目完整快照 | `{project_id,revision,received_at,replayed}` |
+| `GET /openapi.json`、`GET /docs` | 无 | JSON契约、交互文档，不返回项目内容 | OpenAPI JSON / HTML |
 
 路径参数 `project_id` 为1–80字符，首位字母或数字，其后可含字母、数字、点、横线和下划线。必须匹配管理员登记的ID与令牌。未知项目的读取返回404，未登记/错误令牌不能上报。
 
@@ -122,46 +119,46 @@ Task等权：`cancelled`退出分母，子项不计数；done且verified的Task�
 
 ## 5. 错误和重试
 
-应用错误格式：
+普通业务错误格式：
 
 ```json
 {"error":{"code":"revision_conflict","message":"expected_revision differs from current revision"},"current_revision":2}
 ```
 
+登录失败是唯一的固定纯文本例外：HTTP 404，正文 `功能未开发`，不含用户名或密码是否正确的细节。
+
 | HTTP | 常见含义 | 接入方动作 |
 | --- | --- | --- |
-| 401 | Basic缺失/错误，或项目令牌缺失/错误/不匹配 | 停止重试，核对两种凭据；Basic错误可能由Nginx返回HTML |
-| 404 | 项目尚无快照或路径不存在 | 核对ID；首次上报前用revision端点，不靠404推断版本 |
-| 409 | `revision_conflict`或`idempotency_conflict` | 读取最新版本/快照，核对其他写者与真实范围，再创建新快照和新键；不能只把版本号改大重发 |
-| 413 | 超过1 MiB | 缩减内容，不能删除必要计划来假造进度 |
-| 415 | Content-Type不支持 | 使用application/json |
-| 422 | 参数/快照/幂等键校验失败 | 按OpenAPI修正类型、字段、标识、完成依据等 |
-| 5xx、网络超时 | 服务/代理/网络暂时不可用 | 有限退避，原请求体与原幂等键重试；不能假设失败就没有入库 |
+| 401 | 项目令牌缺失/无效，或网页查看会话缺失 | 上报方核对项目 ID 和令牌；网页查看者登录 |
+| 404 | 项目尚无快照、路径不存在，或登录失败（固定正文） | 核对路径/项目ID；首次上报前用revision端点 |
+| 409 | `revision_conflict`或`idempotency_conflict` | 读取最新版本和快照，核对其他写者的内容，再创建新请求体和新幂等键；不能只把旧版本号改大重发 |
+| 413 | 快照超过1 MiB | 缩减内容，不删除必要范围来假造进度 |
+| 415 | 快照 Content-Type 不支持 | 使用application/json |
+| 422 | 快照/幂等键校验失败 | 按OpenAPI修正类型、标识与完成依据 |
+| 5xx、网络超时 | 服务/代理/网络暂时不可用 | 有限退避，以原请求体和幂等键重试；不能假设失败就没有入库 |
 
-所有响应不可缓存。不要记录带认证头的完整请求；错误处理不能输出凭据。反向代理可能返回HTML错误，客户端应首先识别HTTP状态，不假设每个错误都是JSON。
+响应不可缓存。不要记录带项目令牌的请求头、登录密码或完整请求体。项目上报客户端应先识别 HTTP 状态，不假定每个错误响应都是 JSON。
 
-## 6. 标准库客户端与AI执行步骤
+## 6. 标准库客户端与 AI 执行步骤
 
-`clients/report_progress.py` 可通过绝对路径从其他项目调用，无需安装看板依赖。以下从仓库根执行；路径为示例，将它们换成仓库外的真实私有路径：
+`clients/report_progress.py` 可通过绝对路径从其他项目调用，无需安装看板依赖。项目令牌须置于仓库外的私有文件或环境变量；以下命令中的路径只作示例：
 
 ```powershell
 # 1. 查询当前revision（登记后未上报为0）
-python clients/report_progress.py revision my-project --base-url https://dashboard.example.com --basic-auth-file <私有Basic文件> --token-file <私有项目令牌文件>
+python clients/report_progress.py revision my-project --base-url https://dashboard.example.com --token-file <私有项目令牌文件>
 
 # 2. 更新项目自身的数据源，填写完整快照及刚确认的expected_revision
-# 3. 封存为新的请求文件，不把凭据放进该文件
+# 3. 封存本次新请求，文件不含令牌
 python clients/report_progress.py prepare my-project --snapshot <快照文件> --request-file <新的请求文件>
 
-# 4. 发送；超时后重复这条命令，继续用原请求文件
-python clients/report_progress.py send --base-url https://dashboard.example.com --basic-auth-file <私有Basic文件> --token-file <私有项目令牌文件> --request-file <请求文件>
+# 4. 发送；超时后重复本次send，继续使用原请求文件和幂等键
+python clients/report_progress.py send --base-url https://dashboard.example.com --token-file <私有项目令牌文件> --request-file <请求文件>
 ```
 
-也可使用 `--basic-user-env <变量名> --basic-password-env <变量名> --token-env <变量名>`，只在命令参数中传变量名。不要把文件和环境凭据方式混用。`--retries`为0–10，默认4；只对网络问题和5xx重试，4xx立即停止。请求不经环境代理、不跟随重定向。
+也可用 `--token-env <变量名>` 读取令牌。`--retries`为0–10，默认4；只对网络问题和5xx重试，4xx立即停止。客户端不经环境代理、不跟随重定向；任何返回与日志都不会显示原文令牌。
 
-AI接入检查单：领取配置 → 查询版本 → 从源项目记录整理事实 → 核对goal/summary → 检查全量范围和done依据 → prepare新文件 → send → 读取服务快照确认revision/任务内容。遇到缺少凭据或工作证据应明确说明，不能猜测或编造。
+AI接入检查单：领取项目 ID 和该项目令牌 → 用令牌读取本项目最近快照与版本 → 从源项目记录整理事实 → 核对goal/summary → 检查全量范围与done依据 → prepare新文件 → send → 再用令牌读取本项目，核对revision和任务内容。读取视图中的 `id`、`revision`、`receivedAt`、`observedAt`、`progress` 是服务附加字段；构造上报的 `project` 时只保留业务字段，把刚读到的 `revision` 放在顶层 `expected_revision`。读取全部项目列表仍需查看会话。缺少凭据或工作证据时明确说明，不能编造。
 
-## 7. 从旧本机服务迁移
+## 7. 从旧 Basic 双凭据客户端迁移
 
-生产应用与SQLite现位于VPS，开发电脑关闭不影响查看。现有项目ID、令牌哈希、快照、revision和幂等回执通过数据库迁移保留；未被要求轮换的项目令牌可继续使用。
-
-接入方需要：更新客户端；将旧 `http://127.0.0.1:8811` 改为管理员提供的HTTPS基址；补充Basic凭据；项目令牌改发 `X-Project-Token`。不要再发送 `Authorization: Bearer`。本轮不自动修改其他项目仓库。迁移后先查询revision，不能从0重建已有项目。
+现有项目ID、令牌哈希、快照、revision及幂等回执保持不变。接入方更新到本版客户端，仅保留项目令牌的文件/环境变量和HTTPS基址；不再传 `--basic-auth-file`、`--basic-user-env`、`--basic-password-env` 或 `Authorization: Basic`。旧项目 token 不需要轮换，迁移后先查 revision，不能从0重建已有项目。网页查看者使用新的登录页和单独提供的账号、密码。

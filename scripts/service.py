@@ -151,7 +151,8 @@ def load_config(path):
             or not isinstance(v, str) or "\x00" in v for k, v in environment.items()
         ):
             raise ValueError
-        for key in ("DASHBOARD_DB_PATH", "DASHBOARD_WEB_DIR", "DASHBOARD_VIEW_USERNAME", "DASHBOARD_VIEW_PASSWORD"):
+        for key in ("DASHBOARD_DB_PATH", "DASHBOARD_WEB_DIR", "DASHBOARD_LOGIN_USERNAME",
+                    "DASHBOARD_LOGIN_PASSWORD", "DASHBOARD_SESSION_SECRET"):
             if not environment.get(key):
                 raise ValueError
         for key in ("DASHBOARD_DB_PATH", "DASHBOARD_WEB_DIR"):

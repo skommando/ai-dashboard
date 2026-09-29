@@ -1,6 +1,6 @@
 # VPS 部署与发布
 
-本部署使用单个 FastAPI 服务与 SQLite，默认目录 `/opt/ai-dashboard`。Nginx提供HTTPS和Basic Auth，应用再次校验Basic；版本查询/上报另需项目令牌。无需frp。所有示例中的域名、服务器、密码文件路径都需部署者替换，生产秘密只能人工写入私有配置。
+本部署使用单个 FastAPI 服务与 SQLite，默认目录 `/opt/ai-dashboard`。Nginx提供HTTPS；网页登录与180天会话由应用校验，项目版本查询和上报仅需项目令牌。无需frp。示例域名和服务器路径需部署者替换，生产秘密只能人工写入私有配置。
 
 ## 1. 前置条件
 
@@ -9,7 +9,7 @@
 - 应用端口 `127.0.0.1:8810` 空闲；公网只开放HTTPS入口。
 - 独立Python可安装在 `/opt/ai-dashboard/runtime/python`。若系统没有3.12，可使用校验过的固定版本运行时；本轮采用 Astral python-build-standalone CPython3.12.14。其为[uv使用的发行方式](https://docs.astral.sh/uv/guides/install-python/)，不替换系统Python。下载后核对发布者SHA-256，再解包到应用目录。
 
-Nginx站点必须已有server级 `auth_basic`、`auth_basic_user_file` 和443 TLS监听，并有 `#REWRITE-END` 插入标记；发布器保留这些内容，在标记之后加入项目include。已有根location若冲突，先按本模板整理。示意：
+Nginx站点应有443 TLS监听和 `#REWRITE-END` 插入标记，移除旧的 `auth_basic`；发布器在标记之后加入项目include。已有根location若冲突，先按本模板整理。示意：
 
 ```nginx
 server {
@@ -17,13 +17,11 @@ server {
     server_name dashboard.example.com;
     ssl_certificate /etc/ssl/dashboard/fullchain.pem;
     ssl_certificate_key /etc/ssl/dashboard/privkey.pem;
-    auth_basic "Dashboard";
-    auth_basic_user_file /etc/nginx/dashboard.htpasswd;
     #REWRITE-END
 }
 ```
 
-通过交互式htpasswd等工具设置查看凭据，保持与应用一致。证书续期所需ACME challenge路径保持专用免认证，它不是应用API。
+网页登录凭据不放在宝塔密码文件，而放在应用的仓库外私有环境文件。证书续期所需ACME challenge路径保持可访问，它不是应用API。
 
 ## 2. 私有数据准备
 
@@ -34,8 +32,9 @@ server {
 ```dotenv
 DASHBOARD_DB_PATH="/opt/ai-dashboard/shared/data/dashboard.sqlite3"
 DASHBOARD_WEB_DIR="/opt/ai-dashboard/current/web"
-DASHBOARD_VIEW_USERNAME="<人工填写>"
-DASHBOARD_VIEW_PASSWORD="<人工填写>"
+DASHBOARD_LOGIN_USERNAME="<人工填写的查看账号>"
+DASHBOARD_LOGIN_PASSWORD="<人工填写的复杂密码>"
+DASHBOARD_SESSION_SECRET="<人工填写的独立随机密钥，至少32字符>"
 ```
 
 初次空部署可在data下创建空SQLite文件，让应用初始化表；**不得覆盖已经存在的数据库**。从旧系统迁移时：冻结旧写入，用SQLite backup API生成副本并做integrity_check，通过SSH/SCP传入data目录，权限设为服务用户可读写。核对项目revision及projects/events/receipts记录，不能在写入期间只复制主文件而遗漏WAL。
@@ -63,11 +62,11 @@ python3 /root/dashboard-bootstrap/deploy/vps/release.py deploy \
   --nginx /usr/sbin/nginx
 ```
 
-bootstrap解释器需Python3.10+，可直接用上面的外置Python3.12。路径必须为无空格/控制符的安全绝对路径。发布器会预检、拉取main并核对SHA、创建release及锁定依赖的venv、备份SQLite和配置、安装systemd单元、切换current、检查带Basic的健康端点，然后检查并重载Nginx。失败恢复先前代码、站点和服务启用状态；保留最新生产数据库，不盲目覆盖回旧副本。
+bootstrap解释器需Python3.10+，可直接用上面的外置Python3.12。路径必须为无空格/控制符的安全绝对路径。发布器会预检、拉取main并核对SHA、创建release及锁定依赖的venv、备份SQLite和配置、安装systemd单元、切换current、检查公开的健康端点，然后检查并重载Nginx。失败恢复先前代码、站点和服务启用状态；保留最新生产数据库，不盲目覆盖回旧副本。升级旧Basic版本时可短暂保留旧环境变量供回滚，成功验证后删除。
 
 ## 4. 验收和停用旧链路
 
-用实际HTTPS域名检查：无凭据401，正确Basic可读取，只有Basic不能上报，错误项目token被拒绝，正确双凭据成功上报且重复请求返回原回执。核对迁移前后的记录及版本，验证进程重启后仍存在。
+用实际HTTPS域名检查：未登录首页跳转登录页，错误账号/密码统一返回“功能未开发”，登录后读取成功；项目令牌可独立读取本项目、查询版本和上报，错误令牌被拒绝，同请求重试返回原回执。核对迁移前后的记录及版本，验证服务重启后登录会话和进度仍存在。
 
 随后停止并禁用旧的本项目Windows计划任务、frpc与专用frps。不要停止共享frps或修改其他站点。移除旧生产数据前在仓库外保留受限备份，接入方按[API迁移步骤](api.md#7-从旧本机服务迁移)切换。
 

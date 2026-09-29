@@ -17,7 +17,7 @@
 | `/opt/ai-dashboard/shared` | 管理员持有的私有配置、凭据及备份 |
 | `/opt/ai-dashboard/shared/data` | 服务用户持有的SQLite与WAL/SHM；需要目录写权限 |
 
-服务使用低权限 `ai-dashboard` 用户，代码由管理员拥有。`dashboard.env` 至少设置 `DASHBOARD_DB_PATH`、`DASHBOARD_WEB_DIR`、`DASHBOARD_VIEW_USERNAME`、`DASHBOARD_VIEW_PASSWORD`。配置文件及SQLite不可公开下载。Nginx的查看凭据与应用Basic一致；写入额外校验项目令牌。
+服务使用低权限 `ai-dashboard` 用户，代码由管理员拥有。`dashboard.env` 设置 `DASHBOARD_DB_PATH`、`DASHBOARD_WEB_DIR`、`DASHBOARD_LOGIN_USERNAME`、`DASHBOARD_LOGIN_PASSWORD` 和 `DASHBOARD_SESSION_SECRET`。配置文件及SQLite不可公开下载。Nginx负责HTTPS，网页登录与会话由应用校验；项目上报只校验该项目令牌。
 
 ## 备份与恢复
 
@@ -35,4 +35,4 @@ journalctl -u ai-dashboard.service --since '10 minutes ago' --no-pager
 ss -ltn '( sport = :8810 )'
 ```
 
-应用仅监听 `127.0.0.1:8810`。进程存活不等于公网可用，发布后还需通过实际域名验证TLS、Basic认证、项目令牌、读取、上报与幂等重试。日志不得含认证头或请求正文。查看端15秒刷新，可在网络恢复后继续读取；项目上报时间与页面刷新时间分别显示。
+应用仅监听 `127.0.0.1:8810`。进程存活不等于公网可用，发布后还需通过实际域名验证TLS、登录会话、项目令牌、读取、上报与幂等重试。日志不得含登录请求体、会话 Cookie 或项目令牌。查看端15秒刷新，可在网络恢复后继续读取；项目上报时间与页面刷新时间分别显示。

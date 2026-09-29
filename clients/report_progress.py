@@ -1,7 +1,6 @@
 """标准库上报客户端：先封存请求，再用同一键和内容安全重试。"""
 
 import argparse
-import base64
 import json
 import os
 import re
@@ -49,11 +48,10 @@ def validated_base_url(base_url: str) -> str:
     return base_url.rstrip("/")
 
 
-def auth_headers(token: str, username: str, password: str) -> dict[str, str]:
-    if not token or not username or not password or ":" in username:
-        raise ReportError("Basic 凭据或项目令牌无效")
-    basic = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
-    return {"Authorization": "Basic " + basic, "X-Project-Token": token}
+def auth_headers(token: str) -> dict[str, str]:
+    if not isinstance(token, str) or not token or any(character in token for character in "\r\n"):
+        raise ReportError("项目令牌无效")
+    return {"X-Project-Token": token}
 
 
 def prepare_request(project_id: str, snapshot_file: Path, request_file: Path,
@@ -71,12 +69,11 @@ def prepare_request(project_id: str, snapshot_file: Path, request_file: Path,
         file.write("\n")
 
 
-def send_request(request_file: Path, token: str, base_url: str, username: str, password: str,
-                 retries: int = 4) -> dict:
+def send_request(request_file: Path, token: str, base_url: str, retries: int = 4) -> dict:
     if not isinstance(retries, int) or not 0 <= retries <= 10:
         raise ReportError("retries 必须在 0-10 之间")
     root = validated_base_url(base_url)
-    headers = auth_headers(token, username, password)
+    headers = auth_headers(token)
     envelope = json.loads(request_file.read_text(encoding="utf-8"))
     if not isinstance(envelope, dict) or set(envelope) != {"project_id", "idempotency_key", "snapshot"}:
         raise ReportError("请求文件格式无效")
@@ -116,11 +113,11 @@ def send_request(request_file: Path, token: str, base_url: str, username: str, p
     raise AssertionError("unreachable")
 
 
-def fetch_revision(project_id: str, token: str, base_url: str, username: str, password: str) -> dict:
+def fetch_revision(project_id: str, token: str, base_url: str) -> dict:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,79}", project_id):
         raise ReportError("无效项目 ID")
     root = validated_base_url(base_url)
-    headers = auth_headers(token, username, password)
+    headers = auth_headers(token)
     request = Request(root + "/api/v1/projects/" + quote(project_id, safe="") + "/revision",
                       headers=headers, method="GET")
     try:
@@ -135,21 +132,11 @@ def fetch_revision(project_id: str, token: str, base_url: str, username: str, pa
         raise ReportError("查询 revision 网络故障") from None
 
 
-def credentials(args) -> tuple[str, str, str]:
+def credentials(args) -> str:
     token = (args.token_file.read_text(encoding="utf-8").strip()
              if args.token_file else os.environ.get(args.token_env, ""))
-    if args.basic_auth_file:
-        basic = json.loads(args.basic_auth_file.read_text(encoding="utf-8"))
-        if not isinstance(basic, dict) or set(basic) != {"username", "password"}:
-            raise ReportError("Basic 凭据文件格式无效")
-        username, password = basic["username"], basic["password"]
-    else:
-        username = os.environ.get(args.basic_user_env, "")
-        password = os.environ.get(args.basic_password_env, "")
-    if not isinstance(token, str) or not isinstance(username, str) or not isinstance(password, str):
-        raise ReportError("凭据格式无效")
-    auth_headers(token, username, password)
-    return token, username, password
+    auth_headers(token)
+    return token
 
 
 def main(argv=None) -> int:
@@ -164,10 +151,6 @@ def main(argv=None) -> int:
         credential = command.add_mutually_exclusive_group(required=True)
         credential.add_argument("--token-file", type=Path)
         credential.add_argument("--token-env")
-        basic = command.add_mutually_exclusive_group(required=True)
-        basic.add_argument("--basic-auth-file", type=Path)
-        basic.add_argument("--basic-user-env")
-        command.add_argument("--basic-password-env")
         command.add_argument("--base-url", required=True)
     send = commands.add_parser("send")
     send.add_argument("--request-file", type=Path, required=True)
@@ -182,16 +165,12 @@ def main(argv=None) -> int:
             prepare_request(args.project_id, args.snapshot, args.request_file, args.idempotency_key)
             print("请求已封存；失败后使用同一请求文件重试")
         else:
-            if bool(args.basic_auth_file) == bool(args.basic_user_env and args.basic_password_env):
-                raise ReportError("Basic 凭据需使用 JSON 文件，或同时指定用户名与密码环境变量")
-            if args.basic_auth_file and args.basic_password_env:
-                raise ReportError("Basic 凭据来源不可混用")
-            token, username, password = credentials(args)
+            token = credentials(args)
             if args.command == "revision":
-                result = fetch_revision(args.project_id, token, args.base_url, username, password)
+                result = fetch_revision(args.project_id, token, args.base_url)
                 print(f"revision={result['revision']}")
             else:
-                result = send_request(args.request_file, token, args.base_url, username, password, args.retries)
+                result = send_request(args.request_file, token, args.base_url, args.retries)
                 print(f"上报成功，revision={result['revision']}，replayed={str(result['replayed']).lower()}")
     except (ReportError, OSError, ValueError, KeyError) as exc:
         if isinstance(exc, ReportError):

@@ -7,7 +7,6 @@ automatically restored over later production writes.
 """
 
 import argparse
-import base64
 from contextlib import closing
 import json
 import os
@@ -26,8 +25,9 @@ import uuid
 
 
 SHA = re.compile(r"[0-9a-f]{40}\Z")
-ENV_KEYS = {"DASHBOARD_DB_PATH", "DASHBOARD_WEB_DIR",
-            "DASHBOARD_VIEW_USERNAME", "DASHBOARD_VIEW_PASSWORD"}
+ENV_KEYS = {"DASHBOARD_DB_PATH", "DASHBOARD_WEB_DIR", "DASHBOARD_LOGIN_USERNAME",
+            "DASHBOARD_LOGIN_PASSWORD", "DASHBOARD_SESSION_SECRET"}
+LEGACY_ENV_KEYS = {"DASHBOARD_VIEW_USERNAME", "DASHBOARD_VIEW_PASSWORD"}
 UNIT = Path("/etc/systemd/system/ai-dashboard.service")
 SOURCE = Path(__file__).resolve().parent
 
@@ -57,24 +57,22 @@ def validate_path(path, no_space=False):
     return path
 
 
-def server_has_basic(site_text):
-    """Accept the existing one-server Nginx layout, not nested location auth."""
+def server_has_tls_without_basic(site_text):
+    """The application owns login; the TLS server must not demand Basic."""
     depth = 0
-    basic = user_file = tls = False
+    basic = tls = False
     for raw in site_text.splitlines():
         line = raw.split("#", 1)[0].strip()
         if depth == 1:
             match = re.fullmatch(r"auth_basic\s+([^;]+);", line)
             if match:
                 basic = match.group(1).strip().lower() != "off"
-            if re.fullmatch(r"auth_basic_user_file\s+[^;]+;", line):
-                user_file = True
             if re.fullmatch(r"listen\s+443\b[^;]*;", line):
                 tls = True
         depth += line.count("{") - line.count("}")
         if depth < 0:
             return False
-    return depth == 0 and basic and user_file and tls
+    return depth == 0 and tls and not basic
 
 
 def read_environment(path):
@@ -90,11 +88,13 @@ def read_environment(path):
         if len(parts) != 1 or "=" not in parts[0]:
             raise ValueError("dashboard.env 格式无效")
         key, value = parts[0].split("=", 1)
-        if key not in ENV_KEYS or key in values or not value or "\n" in value:
+        if key not in ENV_KEYS | LEGACY_ENV_KEYS or key in values or not value or "\n" in value:
             raise ValueError("dashboard.env 字段无效")
         values[key] = value
-    if set(values) != ENV_KEYS:
+    if not ENV_KEYS.issubset(values) or not set(values).issubset(ENV_KEYS | LEGACY_ENV_KEYS):
         raise ValueError("dashboard.env 缺少必需字段")
+    if len(values["DASHBOARD_SESSION_SECRET"]) < 32:
+        raise ValueError("dashboard.env 会话密钥不足")
     return values
 
 
@@ -130,12 +130,8 @@ def backup_database(source, destination):
 
 
 def healthy(environment, attempts=20):
-    credential = (environment["DASHBOARD_VIEW_USERNAME"] + ":"
-                  + environment["DASHBOARD_VIEW_PASSWORD"]).encode("utf-8")
-    authorization = "Basic " + base64.b64encode(credential).decode("ascii")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-    request = urllib.request.Request("http://127.0.0.1:8810/healthz",
-                                     headers={"Authorization": authorization})
+    request = urllib.request.Request("http://127.0.0.1:8810/healthz")
     for _ in range(attempts):
         try:
             with opener.open(request, timeout=2) as response:
@@ -188,8 +184,8 @@ class Release:
         if self.root.is_symlink() or self.shared.is_symlink() or self.repo.is_symlink():
             raise ValueError("部署目录不能是符号链接")
         site_text = site.read_text(encoding="utf-8")
-        if not server_has_basic(site_text):
-            raise ValueError("站点须先配置 TLS 与 Basic Auth")
+        if not server_has_tls_without_basic(site_text):
+            raise ValueError("站点须配置 TLS 并移除 Basic Auth")
         version = run(str(python), "-c", "import sys; print('%d.%d' % sys.version_info[:2])", capture=True)
         if version != "3.12":
             raise ValueError("外置解释器必须是 Python 3.12")

@@ -46,11 +46,11 @@ class SourceTests(unittest.TestCase):
                 backup.assert_not_called()
                 switch.assert_not_called()
 
-    def test_server_auth_must_be_enabled_at_server_level(self):
+    def test_tls_server_does_not_require_basic_auth(self):
         header = "server {\n listen 443 ssl;\n auth_basic_user_file /private/htpasswd;\n"
-        self.assertTrue(vps.server_has_basic(header + ' auth_basic "viewer";\n location / { }\n}\n'))
-        self.assertFalse(vps.server_has_basic(header + " auth_basic off;\n}\n"))
-        self.assertFalse(vps.server_has_basic(header + ' location / { auth_basic "viewer"; }\n}\n'))
+        self.assertFalse(vps.server_has_tls_without_basic(header + ' auth_basic "viewer";\n location / { }\n}\n'))
+        self.assertTrue(vps.server_has_tls_without_basic(header + " auth_basic off;\n}\n"))
+        self.assertTrue(vps.server_has_tls_without_basic(header + "}\n"))
 
     def test_paths_reject_control_characters_and_nonabsolute_values(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -147,12 +147,17 @@ class BackupTests(unittest.TestCase):
             path = Path(directory) / "dashboard.env"
             valid = ("DASHBOARD_DB_PATH=/opt/ai-dashboard/shared/data/dashboard.sqlite3\n"
                      "DASHBOARD_WEB_DIR=/opt/ai-dashboard/current/web\n"
-                     "DASHBOARD_VIEW_USERNAME=viewer\n"
-                     "DASHBOARD_VIEW_PASSWORD='with spaces # and = signs'\n")
+                     "DASHBOARD_LOGIN_USERNAME=viewer\n"
+                     "DASHBOARD_LOGIN_PASSWORD='with spaces # and = signs'\n"
+                     "DASHBOARD_SESSION_SECRET=" + "s" * 64 + "\n")
             path.write_text(valid, encoding="utf-8")
-            self.assertEqual(vps.read_environment(path)["DASHBOARD_VIEW_PASSWORD"],
+            self.assertEqual(vps.read_environment(path)["DASHBOARD_LOGIN_PASSWORD"],
                              "with spaces # and = signs")
-            for content in (valid + "DASHBOARD_VIEW_USERNAME=again\n", valid + "EXTRA=value\n"):
+            path.write_text(valid + "DASHBOARD_VIEW_USERNAME=old\nDASHBOARD_VIEW_PASSWORD=old-secret\n",
+                            encoding="utf-8")
+            self.assertEqual(vps.read_environment(path)["DASHBOARD_VIEW_USERNAME"], "old")
+            for content in (valid + "DASHBOARD_LOGIN_USERNAME=again\n", valid + "EXTRA=value\n",
+                            valid.replace("s" * 64, "short")):
                 path.write_text(content, encoding="utf-8")
                 with self.assertRaises(ValueError):
                     vps.read_environment(path)
@@ -176,7 +181,8 @@ class RecoveryTests(unittest.TestCase):
             manager.unit.write_text("old unit", encoding="utf-8")
             backup = base / "backup"
             backup.mkdir()
-            env = {"DASHBOARD_VIEW_USERNAME": "viewer", "DASHBOARD_VIEW_PASSWORD": "secret"}
+            env = {"DASHBOARD_LOGIN_USERNAME": "viewer", "DASHBOARD_LOGIN_PASSWORD": "secret",
+                   "DASHBOARD_SESSION_SECRET": "s" * 64}
 
             def switch(release, environment):
                 vps.atomic_symlink(manager.current, release)
@@ -223,7 +229,8 @@ class RecoveryTests(unittest.TestCase):
             manager.environment_file.write_text(
                 "DASHBOARD_DB_PATH=/opt/ai-dashboard/shared/data/dashboard.sqlite3\n"
                 "DASHBOARD_WEB_DIR=/opt/ai-dashboard/current/web\n"
-                "DASHBOARD_VIEW_USERNAME=viewer\nDASHBOARD_VIEW_PASSWORD=secret\n")
+                "DASHBOARD_LOGIN_USERNAME=viewer\nDASHBOARD_LOGIN_PASSWORD=secret\n"
+                "DASHBOARD_SESSION_SECRET=" + "s" * 64 + "\n")
             manager.database.parent.mkdir()
             manager.database.write_bytes(b"unchanged")
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>登录 · 进度簿</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; color: #293d2c; background: #eff2eb; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; min-height: 100dvh; margin: 0; display: grid; place-items: center; padding: 24px; }
+    main { width: min(100%, 384px); padding: 38px 32px 32px; background: #fbfcf9; border: 1px solid #dfe6d8; border-radius: 12px; box-shadow: 0 16px 44px #3652390d; }
+    .brand { display: flex; align-items: center; gap: 9px; margin-bottom: 37px; color: #617c55; font-size: 13px; font-weight: 600; letter-spacing: .04em; }
+    .mark { display: flex; align-items: flex-end; gap: 3px; width: 20px; height: 19px; }
+    .mark i { display: block; width: 4px; background: #89a87c; border-radius: 2px; }
+    .mark i:nth-child(1) { height: 9px; } .mark i:nth-child(2) { height: 15px; } .mark i:nth-child(3) { height: 12px; }
+    h1 { margin: 0 0 9px; font-size: 25px; line-height: 1.35; letter-spacing: -.035em; font-weight: 600; }
+    .intro { margin: 0 0 28px; color: #788b74; font-size: 13px; line-height: 1.8; }
+    label { display: block; margin: 0 0 8px; color: #51694d; font-size: 12px; font-weight: 550; }
+    input { display: block; width: 100%; height: 46px; margin: 0 0 20px; padding: 0 12px; border: 1px solid #cdd9c9; border-radius: 6px; background: #fff; color: #2f4431; font-family: inherit; font-size: 16px; outline: none; }
+    input:focus { border-color: #829d77; box-shadow: 0 0 0 3px #9bb58d33; }
+    button { display: block; width: 100%; min-height: 48px; margin-top: 8px; border: 0; border-radius: 6px; background: #506e49; color: #fff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #42613d; } button:disabled { opacity: .65; cursor: wait; }
+    .error { min-height: 19px; margin: 14px 0 0; color: #9e6744; font-size: 12px; line-height: 1.6; }
+    .note { margin: 27px 0 0; padding-top: 19px; border-top: 1px solid #e6ebe1; color: #95a38f; font-size: 11px; line-height: 1.7; }
+    @media (max-width: 420px) { body { align-items: start; padding: max(38px, env(safe-area-inset-top)) 18px 24px; } main { padding: 33px 25px 29px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>进度簿</div>
+    <h1>查看项目进度</h1>
+    <p class="intro">登录后可在这台设备上保持 180 天会话。</p>
+    <form id="login-form" autocomplete="on">
+      <label for="username">账号</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+      <label for="password">密码</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button type="submit">登录</button>
+      <p class="error" id="error" role="alert" aria-live="polite"></p>
+    </form>
+    <p class="note">会话保存在当前浏览器。使用隐私浏览或清除网站数据后，需要再次登录。</p>
+  </main>
+  <script>
+    document.querySelector('#login-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector('button');
+      const error = document.querySelector('#error');
+      button.disabled = true;
+      error.textContent = '';
+      try {
+        const response = await fetch('/api/v1/login', {
+          method: 'POST', credentials: 'same-origin', cache: 'no-store',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: document.querySelector('#username').value,
+                                 password: document.querySelector('#password').value })
+        });
+        if (response.ok) { window.location.replace('/' + window.location.hash); return; }
+      } catch (_) { /* Keep the same public failure text as the login API. */ }
+      error.textContent = '功能未开发';
+      button.disabled = false;
+    });
+  </script>
+</body>
+</html>
