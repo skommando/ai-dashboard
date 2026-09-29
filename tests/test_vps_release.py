@@ -215,7 +215,8 @@ class RecoveryTests(unittest.TestCase):
             backup = base / "backup"
             backup.mkdir()
             env = {"DASHBOARD_LOGIN_USERNAME": "viewer", "DASHBOARD_LOGIN_PASSWORD": "secret",
-                   "DASHBOARD_SESSION_SECRET": "s" * 64}
+                   "DASHBOARD_SESSION_SECRET": "s" * 64,
+                   "DASHBOARD_VIEW_USERNAME": "old-viewer", "DASHBOARD_VIEW_PASSWORD": "old-secret"}
 
             def switch(release, environment):
                 vps.atomic_symlink(manager.current, release)
